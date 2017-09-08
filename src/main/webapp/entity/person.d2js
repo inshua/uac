@@ -150,7 +150,7 @@ d2js.tryCreateUserOfPerson = function(person, node, role, suggestUsernames){
 		               };		
 		this.insertRow('sys_user', userRow);
 	}
-	this.insertRow('user_role_dispatch', {id : $SQL("nextval('seq_nonentity')"), sys_user : userRow.id, sys_role : role});
+	this.insertRow('uac.user_role_dispatch', {id : $SQL("nextval('uac.uac.seq_nonentity')"), sys_user : userRow.id, sys_role : role});
 	
 	return this.query('select u.*, p.name from sys_user u, person p where u.id=? and p.id = u.person', [userRow.id]).rows[0];
 }
@@ -162,18 +162,18 @@ d2js.findEmployLog = function(person, roleId, node){
 
 d2js.startEmployLog = function(person, nodeId, userId, roleId){
 	var rcd = {  
-	    id : $SQL("nextval('seq_nonentity')"), person : person.id, node : nodeId, start_date : new Date(), sys_role : roleId, sys_user : userId, status : 'A' 
+	    id : $SQL("nextval('uac.seq_nonentity')"), person : person.id, node : nodeId, start_date : new Date(), sys_role : roleId, sys_user : userId, status : 'A' 
 	};
-	this.insertRow('employ_log', rcd);
+	this.insertRow('uac.employ_log', rcd);
 }
 
 d2js.stopEmployLog = function(employLog){
-	this.execute("update employ_log set end_date = now(), status = 'F' where id=?", [employLog.id]);
+	this.execute("update uac.employ_log set end_date = now(), status = 'F' where id=?", [employLog.id]);
 }
 
 d2js.destroyPerson = function(params, rcd){
 	// this.actas('person.delete', 'person', rcd.id, rcd);
-	this.deleteRow('person', rcd);
+	this.deleteRow('uac.person', rcd);
 };
 
 

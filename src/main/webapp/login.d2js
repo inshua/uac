@@ -91,7 +91,7 @@ d2js.login = function(params, from) {
 					throw new Error('系统没有该用户，请检查！');
 				}
 			
-			sql = 'select * from vw_employee v where upper(v.username) = :name '
+			sql = 'select * from uac.vw_employee v where upper(v.username) = :name '
 				+'or upper(v.wechat)= :name or upper(v.tel) = :name or upper(v.email) = :name or upper(v.id_card) = :name or upper(v.employee_no) = :name' ;
 			rows = this.query(sql, {name : username.toUpperCase()}).rows;
 		}

@@ -43,15 +43,15 @@ d2js.updateDispatchedRoles = function(rcd){
 	    
 	    if(this.executor.isOracle()){
 	    	var sqlMerge = 
-		    	"insert into user_role_dispatch(id, sys_user, sys_role) select seq_nonentity.nextval, :id, :role from dual where not exists (select 1 from user_role_dispatch where sys_user=:id and sys_role = :role)";
+		    	"insert into uac.user_role_dispatch(id, sys_user, sys_role) select uac.seq_nonentity.nextval, :id, :role from dual where not exists (select 1 from user_role_dispatch where sys_user=:id and sys_role = :role)";
 	    } else if(this.executor.isPostgreSQL()){
 	    	var sqlMerge = 
-		    	"insert into user_role_dispatch(id, sys_user, sys_role) select nextval('seq_nonentity'), :id, :role  where not exists (select 1 from user_role_dispatch where sys_user=:id and sys_role = :role)";
+		    	"insert into uac.user_role_dispatch(id, sys_user, sys_role) select nextval('uac.seq_nonentity'), :id, :role  where not exists (select 1 from user_role_dispatch where sys_user=:id and sys_role = :role)";
 	    }
 	
 	    var arr = [];
 	    for(var i=0; i< roles.length; i++) arr.push('?');
-	    var sqlClean = 'delete from user_role_dispatch where sys_user = ? and sys_role not in ('+ arr.join(',') +')'; 
+	    var sqlClean = 'delete from uac.user_role_dispatch where sys_user = ? and sys_role not in ('+ arr.join(',') +')'; 
 	    
     	var me = this;
     	roles.forEach(function(role){

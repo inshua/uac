@@ -24,7 +24,7 @@ d2js.create = function(rcd){
 	});
 
 	
-	rcd.id = this.nextId("seq_nonentity");
+	rcd.id = this.nextId("uac.seq_nonentity");
 	this.actas('employ_log.add', 'employ_log', rcd.id, rcd);
 	this.insertRow('employ_log', rcd, ["id","node","start_date","end_date","job","person","sys_user","status"]);		
 };

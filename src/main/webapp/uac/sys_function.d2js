@@ -129,7 +129,7 @@ d2js.resetActionsInner = function(uri, sysFunction){
 				MERGE INTO uac.sub_function USING dual ON ( sys_function=:sys_function and code = :code)
 				WHEN MATCHED THEN UPDATE SET menu_index = :menu_index, name = :name , status = :status, dependence = :dependence 
 				WHEN NOT MATCHED THEN INSERT (id, name,sys_function, menu_index, status, code, dependence)
-				    VALUES (seq_nonentity.nextval, :name, :sys_function, :menu_index, :status, :code, :dependence)
+				    VALUES (uac.seq_nonentity.nextval, :name, :sys_function, :menu_index, :status, :code, :dependence)
     		.}
 		} else if(this.executor.isPostgreSQL()){
 			sql{.(sqlMerge)
@@ -177,7 +177,7 @@ d2js.create = function(rcd){
 	});
 
 	
-	rcd.id = this.nextId("SEQ_NONENTITY");
+	rcd.id = this.nextId("uac.SEQ_NONENTITY");
 	this.actas('uac.sys_function.add', 'uac.sys_function', rcd.id, rcd);
 	
 	// logger.info('is postgres ' + this.executor.isPostgreSQL());

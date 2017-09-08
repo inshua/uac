@@ -227,7 +227,7 @@ d2js.updateDispatchedFunctions = function(sFuns, role){
 		    	MERGE INTO uac.sys_role_sub_function USING dual ON ( sub_function=:id and sys_role = :role)
 				WHEN MATCHED THEN UPDATE SET dispatch_mode = :mode 
 				WHEN NOT MATCHED THEN INSERT (id, sub_function, sys_role, dispatch_mode)
-				    VALUES (seq_nonentity.nextval, :id, :role, :mode)
+				    VALUES (uac.seq_nonentity.nextval, :id, :role, :mode)
 			.}
 		} else if(this.executor.isPostgreSQL()){
 			sql{.(sqlMerge)
@@ -240,7 +240,7 @@ d2js.updateDispatchedFunctions = function(sFuns, role){
 				  RETURNING t.*
 				)
 				INSERT INTO uac.sys_role_sub_function(id, sub_function, sys_role, dispatch_mode)
-				SELECT nextval('seq_nonentity'), :id, :role, :mode
+				SELECT nextval('uac.seq_nonentity'), :id, :role, :mode
 				FROM nv
 				WHERE NOT EXISTS(SELECT 1 FROM upsert LIMIT 1)
 			.}

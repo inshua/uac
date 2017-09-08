@@ -46,8 +46,8 @@ d2js.create = function(){
 		device_id:''
 			};
 				
- 	rcd.id = this.nextId('login_log_id_seq');
-	return this.insertRow('login_log', rcd);
+ 	rcd.id = this.nextId('uac.login_log_id_seq');
+	return this.insertRow('uac.login_log', rcd);
 }
 
 
