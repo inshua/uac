@@ -75,7 +75,6 @@
 				newCookie.setPath(request.contextPath + "/");
 				newCookie.setHttpOnly(true);
 				response.addCookie(newCookie);
-				//session.user = session.userJava;[在孟祥翔环境上需要去掉注释]
 				response.sendRedirect("../views/main.jsp");
 			}else{
 				var em = (session.user.id != 0)?session.user.person.employee:-1;
