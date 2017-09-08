@@ -1,0 +1,38 @@
+d2js.exports.fetchStation=true;
+d2js.fetchStation=function(params){
+	if(params.employee){
+		sql{.
+			select es.id id,es.kind, es.is_member, s.node node,s.id station,es.employee employee 
+			from uac.employee_station es, uac.sys_station s 
+			where es.station=s.id and es.employee=:employee
+		.}
+		return this.query(sql, params);
+	}
+}
+
+
+d2js.destroy = function(rcd){
+	this.deleteRows('uac.employee_station',{'id':rcd.id});
+};
+
+
+d2js.modify = function(rcd){
+	this.updateRow('uac.employee_station',rcd,['id','employee','station','kind', 'is_member']);
+	this.callD2js('employee.d2js', 'updateNodes', [rcd.employee]);
+};
+
+d2js.create = function(rcd, columns, employee){
+	$V(this,rcd, {id : [],  
+		kind : [V.notNull],
+		station : [V.notNull],
+		is_member : [V.inside(['Y','N'],'请选择是否为成员')],
+	});
+	rcd.id = this.nextId("uac.employee_station_id_seq");
+	rcd.employee = employee.id;
+	var r = this.insertRow('uac.employee_station', rcd, ["id","employee","station","kind", 'is_member']);
+	this.callD2js('employee.d2js', 'updateNodes', [rcd.employee]);
+	return r;
+};
+
+
+

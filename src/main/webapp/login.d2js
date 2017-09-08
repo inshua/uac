@@ -1,0 +1,332 @@
+imports('jssp-lib/checknum.js');
+imports("jssp-lib/cryptutil.js");
+imports("jssp-lib/cookie.js");
+imports("config/website.js");
+
+d2js.testPwdByUsername = function(params){
+	var username= this.session.user.username;
+	logger.info("username:" + username);
+	var getpwdSql='select password from person where upper(username) = :name or upper(wechat)= :name or upper(tel) = :name or upper(email) = :name';
+	rows = this.query(getpwdSql, {name : username.toUpperCase()}).rows;
+	if (rows.length) {
+		var r = rows[0];
+		var pwd=r.password;
+		pwd=CryptUtil.hexToByteArray(r.password);
+		var enPwd =JSON.stringify(CryptUtil.mysqlEncrypt(pwd,this.session.random));
+		var rcvPwd = JSON.stringify(CryptUtil.intArrayToByteArray(JSON.parse(params.oldpass)));
+		if(enPwd != rcvPwd){
+			throw new Error('用户名或密码不正确');
+		}else{
+//			this.out.print("{success:true}");
+		}
+	} else {
+		throw new Error('用户名或密码不正确');
+	}
+};
+
+d2js.validatePassword = function(pwdSha1, pwdInput){
+	logger.info('recv pwd ' + pwdInput);
+	var pwd= CryptUtil.hexToByteArray(pwdSha1);
+	var enPwd =CryptUtil.mysqlEncrypt(pwd, this.session.random);
+	var recvPwd = CryptUtil.hexToByteArray(pwdInput);
+	return enPwd.join() == recvPwd.join();
+}
+	
+d2js.random = function(){
+	var random = java.util.UUID.randomUUID().toString();
+	random=random.replace(/-/g,'').substr(0,20);
+	this.session.random=random;
+	return random;
+}
+
+d2js.userModifyPwd = function(params){
+	var user=this.session.user;
+	var newpass=params.newpass;
+	logger.info("newpass:"+newpass);
+	if(newpass == '') {
+		throw new Error('密码不正确');
+	}
+	var userModifyPwd='update person set password=?';
+	this.updateRow('PERSON', {
+		id : user.id,
+		password : newpass
+	});
+};
+
+d2js.exports.login = true;
+d2js.login = function(params, from) {
+	var username = params.u, password = params.p;
+	try {
+		var sql, rows;
+		//利用cookie登录，后面需要解决
+		if (params.UUIDCookie && from=='cookie') {
+			sql = 'select sys_user.*, node.name node_name, node.type node_type from uac.sys_user sys_user, uac.node node where sys_user.node = node.id and autologin_uuid=?';
+			rows = this.query(sql, [params.UUIDCookie]).rows;
+		} else {
+			if(requireValidCode){
+				if (params.validation != null && this.session.validation != null && (params.validation.toUpperCase() == this.session.validation.toUpperCase())) {
+					this.session.validation = null;
+				} else {
+					throw new Error('校验码不正确');
+				}
+		}
+			
+			var getpwdSql= 'select * from uac.vw_employee v where upper(v.username) = :name '
+				+'or upper(v.wechat)= :name or upper(v.tel) = :name or upper(v.email) = :name or upper(v.id_card) = :name or upper(v.employee_no) = :name' ;
+			
+			rows = this.query(getpwdSql, {name : username.toUpperCase()}).rows;
+			
+			if (rows.length) {
+				
+				var r = rows[0];
+				var user = {"id":r.id,"login":{"action":"L"}};
+				this.session.user = user;
+				
+				if(!this.validatePassword(r.password, password)){
+					throw new Error('密码不正确');
+					} else {
+						logger.info('密码正确')
+					}
+				}else{
+					throw new Error('系统没有该用户，请检查！');
+				}
+			
+			sql = 'select * from vw_employee v where upper(v.username) = :name '
+				+'or upper(v.wechat)= :name or upper(v.tel) = :name or upper(v.email) = :name or upper(v.id_card) = :name or upper(v.employee_no) = :name' ;
+			rows = this.query(sql, {name : username.toUpperCase()}).rows;
+		}
+		
+		if (rows.length) {
+			var r = rows[0];
+			
+//			if(this.existSameSession(r.employee)){
+//				throw new Error('不能重复登录');
+//			}
+			
+			user.login.description = "登录名为"+username+",登录类型为"+this.getLoginType(username,r);
+			user.person = r;
+			user.username = r.name;
+			
+			if(user.id != 0){
+				if(rows.length > 1){
+					this.response.sendRedirect('front/employee-choose.jssp');
+					return;
+				}else{
+					var roles = this.findRoles(r.employee);
+					logger.info("ROLES:"+ JSON.stringify(roles));
+					this.session.roles = roles;	
+				}
+			}else{
+				var roles = this.findRoles(r.employee);
+				logger.info("ROLES:"+ JSON.stringify(roles));
+				user.roles = roles;
+				user.functions = this.loadRootFunctions();
+				user.role = {id : 0, name : '超级用户', role_level: 0};
+				var subFunctions = this.loadRootSubFunctions();
+				user.allowedFunctions = this.createAllowFunctionMask(user.functions, subFunctions);
+				user.allowed = user.allowedFunctions;
+			}
+			
+			this.response.sendRedirect('front/station-choose.jssp');
+		} else {
+			throw new Error('用户名或密码不正确');
+		}
+	} catch (e) {
+		logger.error('login failed', wrapJsError(e));
+		this.session.error = e;
+		
+		if(this.session.user){
+			this.session.user.login.result_desc = e.message;
+			this.session.user.login.result = "F";
+			this.session.user.login.description = '账户'+ username +'登录失败';
+			this.callD2js('uac/login_log.d2js','create');
+		}
+		logger.info(JSON.stringify(this.session.user));
+		this.response.sendRedirect('index.jssp');
+		throw e;
+		
+	}
+};
+
+// 创建可访问功能掩码
+d2js.createAllowFunctionMask = function(functions, subs){
+	var obj = {};
+	for(var i=0; i<functions.length; i++){
+		var fun = functions[i];
+		switch(fun.dispatch_mode){
+		case 'T' :
+		case 'O' :
+			obj[fun.code] = true;
+		}
+	}
+	for(var i=0; i<subs.length; i++){
+		var fun = subs[i];
+		switch(fun.dispatch_mode){
+		case 'T' :
+		case 'O' :
+			obj[fun.code] = true;
+		}
+	}
+	return obj;
+};
+
+d2js.loadFunctions = function(role){
+	if(this.executor.isOracle()){
+		var sql =
+			"with rf as\n" +
+			" (select * from uac.sys_role_function where sys_role = ?),\n" + 
+			"fun as\n" + 
+			" (select id, name, parent_id, menu_index, status, developer, code, uri, icon_url, \n" + 
+			"         open_mode\n" + 
+			"    from uac.sys_function f\n" +
+			"   where id in (select sys_function from rf)\n" +
+			"  connect by parent_id = prior id\n" + 		
+			"         and status IN ('N', 'H')\n" + 
+			"   start with id = 0\n" + 
+			"   order siblings by menu_index)\n" + 
+			"select fun.*, rf.dispatch_mode from fun, rf where rf.sys_function = fun.id";
+	} else if(this.executor.isPostgreSQL()){
+		var sql =
+			"WITH rf AS\n" +
+			" (SELECT * FROM uac.sys_role_function WHERE sys_role = ?),\n" + 
+			"fun AS\n" + 
+			" (WITH RECURSIVE t AS\n" + 
+			"     (SELECT *, ARRAY[menu_index] menu_path\n" + 
+			"       FROM uac.sys_function sys_function\n" + 
+			"      WHERE id = 0\n" + 
+			"     UNION\n" + 
+			"     SELECT d.*, menu_path || d.menu_index\n" + 
+			"       FROM uac.sys_function d, t\n" + 
+			"      WHERE d.parent_id = t.id\n" + 
+			"        AND d.status IN ('N', 'H')\n" + 
+			"        AND d.id IN (SELECT sys_function FROM rf))\n" + 
+			"    SELECT id, NAME, parent_id, menu_index, status, developer, code, uri, icon_url, \n" + 
+			"           open_mode\n" + 
+			"      FROM t\n" + 
+			"     ORDER BY menu_path)\n" + 
+			"SELECT fun.*, rf.dispatch_mode FROM fun, rf WHERE rf.sys_function = fun.id";
+	}
+	return this.query(sql, [role]).rows;
+};
+
+d2js.loadSubFunctions = function(role){
+	var sql =
+		"select sf.id, sf.name, sf.code, sf.menu_index, sf.status, 'O' dispatch_mode\n" +
+		"  from uac.sys_role_function rf, uac.sys_function f, uac.sub_function sf\n" + 
+		" where rf.sys_role = ?\n" + 
+		"   and rf.sys_function = f.id\n" + 
+		"   and f.status IN ('N', 'H')\n" + 
+		"   and sf.status = 'N'\n" + 
+		"   and sf.sys_function = f.id\n" + 
+		"   and not exists (select 1\n" + 
+		"          from sys_role_sub_function ssf\n" + 
+		"         where ssf.sub_function = sf.id\n" + 
+		"           and ssf.sys_role = ?\n" + 
+		"           and ssf.dispatch_mode = 'D')";
+
+	return this.query(sql, [role, role]).rows;
+};
+
+d2js.loadRootFunctions = function(){
+	if(this.executor.isOracle()){
+		var sql = 
+			"select id, name, parent_id, menu_index, status, developer, code, uri, icon_url, \n" +
+			"       open_mode, 'T' dispatch_mode \n" + 
+			"  from uac.sys_function f\n" + 
+			"connect by parent_id = prior id\n" + 
+			"       and status IN ('N', 'H')\n" + 
+			" start with id = 0\n" + 
+			" order siblings by menu_index";
+	} else if(this.executor.isPostgreSQL()){
+		var sql = 
+			"WITH RECURSIVE t AS\n" +
+			" (SELECT *, ARRAY [ menu_index ] menu_path\n" + 
+			"    FROM uac.sys_function\n" + 
+			"   WHERE id = 0\n" + 
+			"  UNION\n" + 
+			"  SELECT d.*, menu_path || d.menu_index\n" + 
+			"    FROM uac.sys_function d, t\n" + 
+			"   WHERE d.parent_id = t.id\n" + 
+			"     AND d.status IN ('N', 'H'))\n" + 
+			"SELECT id, NAME, parent_id, menu_index, status, developer, code, uri, icon_url, \n" + 
+			"       open_mode, 'T' dispatch_mode\n" + 
+			"  FROM t\n" + 
+			" ORDER BY menu_path";
+	}
+	return this.query(sql, []).rows;
+};
+
+d2js.loadRootSubFunctions = function(){
+	var sql = 
+		"select id, name, menu_index, status, code, dependence, \n" +
+		"       'T' dispatch_mode \n" + 
+		"  from uac.sub_function f where status IN ('N', 'H')"; 
+	return this.query(sql, []).rows;
+};
+
+d2js.exports.logout = true;
+d2js.logout = function(){
+	this.session.invalidate();
+	this.response.sendRedirect('index.jssp?_m=logout');
+};
+
+d2js.exports.shiftRole = true;
+d2js.shiftRole = function(params){
+	var chooseIdx = params.chooseIdx;
+	logger.info("选中的id为"+chooseIdx);
+	this.session.user.login.description = '切换角色到'+this.session.user.node.name+"的"+this.session.stationChooses[chooseIdx].roles.map(function(a){return a.name}).join();
+	this.session.user.login.action = "O";
+	this.session.func = null;
+	this.response.sendRedirect('front/station-choose.jssp?choose='+chooseIdx);
+	
+//	var idx = Array.prototype.find.call(roles, function(r){return r.id == role;}); 
+//	//TODO 检查角色是否被删除
+//	role = roles[idx];
+//	if(role.node_scope == 'R'){
+//		user.node = role.node;
+//		user.node_name = role.node_name;
+//	}
+//	user.role = role;
+//	
+//	user.functions = this.loadFunctions(role.id);
+//	
+//	this.response.sendRedirect(r.company.customerFrontPage || 'front/main.jssp');
+};
+
+d2js.findEmployeeByPerson = function(personId){
+	var sql = "select * from employee where person = ?";
+	return this.query(sql, [personId]).rows;
+}
+
+
+d2js.findRoles = function(eId){
+	var sql = "select ss.id station_id, ss.name station_name,node.name node_name,node.id node_id, sr.name role_name,sr.* from uac.sys_station ss,uac.employee_station es,uac.person p,uac.employee e, uac.sys_station_role_dispatch ssrd,uac.sys_role sr,uac.node " 
+	+"where p.id = e.person and e.id = es.employee and ss.id = es.station and ss.id = ssrd.sys_station and sr.id = ssrd.sys_role and ssrd.bind_node = node.id and e.id = ?"
+	
+	return this.query(sql,[eId]).rows;
+	
+}
+
+d2js.existSameSession = function(emId){
+	try{
+		return application['employee_' + emId] && application['employee_' + emId].creationTime;
+	}catch(e){
+		
+	}	
+}
+
+d2js.getLoginType = function(loginName,row){
+	if(loginName == row.tel){
+		return "手机号登录";
+	}else if(loginName == row.wechat){
+		return "微信号登录";
+	}else if(loginName == row.email){
+		return "邮箱登录";
+	}else if(loginName == row.id_card){
+		return "身份证号登录";
+	}else if(loginName == row.employee_no){
+		return "员工编号登录";
+	}else{
+		return "用户名登录";
+	}	
+}

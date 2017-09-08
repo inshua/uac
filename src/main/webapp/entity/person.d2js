@@ -1,0 +1,369 @@
+
+d2js.createPerson = function(rcd){
+
+	$V(this,rcd, {id : [],  
+		name : [V.notNull,V.longest(200),],  
+		address : [V.longest(200),],  
+		tel : [V.longest(20),],  
+		mobile : [V.longest(20),],  
+		wechat : [V.longest(40),],  
+		username : [V.longest(40), V.unique('person', null, null, true)],  
+		password : [V.longest(40),],  
+	});
+	
+	if(rcd.nationality instanceof Array){
+		rcd.nationality = $ARRAY('varchar', rcd.nationality);
+	} else {
+		rcd.nationality = $ARRAY('varchar', [rcd.nationality]);
+	}
+	
+	rcd.id = this.nextId("seq_entity");
+	// this.actas('person.add', 'person', rcd.id, rcd);
+	
+	var flds = ["id","name","photo","nationality","address","tel","birth","mobile","email","wechat","username"];
+	if(rcd.password && rcd.password.length){
+		flds.push("password");
+	}
+	
+	this.insertRow('person', rcd, flds);
+	return rcd;		
+};
+
+d2js.modifyPerson = function(rcd){
+	
+	$V(this,rcd, {id : [],  
+		name : [V.notNull,V.longest(200),],  
+		photo : [],  
+		address : [V.longest(200),],  
+		tel : [V.longest(20),],  
+		mobile : [V.longest(20),],  
+		wechat : [V.longest(40),],  
+		username : [V.longest(40), V.unique('person', null, null, true)],  
+		password : [V.longest(40),],  
+		
+	});
+	if(rcd.nationality instanceof Array){
+		rcd.nationality = $ARRAY('varchar', rcd.nationality);
+	} else {
+		rcd.nationality = $ARRAY('varchar', [rcd.nationality]);
+	}
+	
+	var flds = ["id","name","photo","nationality","address","tel","birth","mobile","email","wechat","username"];
+	if(rcd.password && rcd.password.length){
+		flds.push("password");
+	}
+	
+	//this.actas('person.edit', 'person', rcd.id, rcd);
+	this.updateRow('person', rcd, flds);
+};
+
+d2js.findExistPerson = function(params){
+	var sql = 'select id,name,photo,nationality,address,tel,birth,mobile,email,wechat,username from person where 1=1';
+	
+	var attrs = ['username', 'email', 'mobile', 'wechat'];
+	var count = 0;
+	for(var i=0; i < attrs.length; i++){		// 可以用作唯一判据的条件
+		var attr = attrs[i];
+		if(params[attr]) count ++;
+	}
+	if(count >= 1){
+		if(params.username) sql += ' and username = :username';
+		if(params.email) sql += ' and email = :email';
+		if(params.mobile) sql += ' and mobile = :mobile';
+		if(params.wechat) sql += ' and wechat = :wechat';
+		return this.query(sql, params);
+	} else {
+		return {columns : [{name : 'id', type : 'INT'}], rows : []};
+	}
+}
+
+/**
+ * 找到可以用于指定节点的职位 role
+ * @param roleCode 定义于 sys_role_code 表，如 pilot, train_teacher 
+ */
+d2js.findRoleByCode = function(node, roleCode){
+	var sql = 
+		"with recursive nd as (\n" +
+		"  select * from node where id = :node \n" + 
+		"  union\n" + 
+		"  select node.* from node, nd where node.id = nd.parent_id\n" + 
+		"),\n" + 
+		"a as (\n" + 
+		"select * from sys_role where node in (select id from nd) and code = :code and node_scope = 'U'\n" + 
+		")\n" + 
+		"select * from sys_role where node = :node and code = :code \n" + 
+		"union\n" + 
+		"select * from a";
+	
+	var row = this.query(sql, {node : node, code : roleCode}).rows[0];
+	return row;
+}
+
+
+/**
+ * 为 person 创建用户, 如果已经存在则不创建
+ * @param person Person 记录，主键为 id
+ * @param node 用户所属节点 id
+ * @param role 角色 id
+ * @suggestUsernames 建议的用户名，如果用户名都无效则自动生成一个短字符串
+ */
+d2js.tryCreateUserOfPerson = function(person, node, role, suggestUsernames){
+	// 如果该节点下已存在与该 person 对应的用户，且角色正好是指定角色，抛错
+	var sql = 
+		'select * from sys_user u where person = :person and node = :node and exists (select 1 from user_role_dispatch where sys_user = u.id and sys_role = :role limit 1)'
+	var r = this.query(sql, {person : person.id, node : node, role : role}).rows[0];
+	if(r) {
+		logger.error('account exist ' + JSON.stringify(r));
+		throw new Error(person.name + '的账号已经存在');
+	}
+	
+	// 出于简单化考虑，不理会节点的父级或子级有该人的雇佣记录，且角色为指定角色。	
+	// 如果person被移到父级或子级，此时系由“编辑”动作产生，编辑调整node，则原来的雇佣关系被解除，新建一个雇佣关系。
+	// 应当允许用户出现在两个不同的节点，形成兼职雇佣关系。
+	var sql = 'select * from sys_user u where person = :person and node = :node';
+	var userRow = this.query(sql, {person : person.id, node : node, role : role}).rows[0];
+	if(!userRow){
+		// 得到新用户名
+		do{
+			var sql = 
+				"with r as (\n" +
+				(suggestUsernames && suggestUsernames.map(function(n){return "select '" + n + "' u \r\n union all \r\n"}).join('')) + 
+				"select md5(to_char(random(), '0.9999999999999999')) u\n" +		
+				"union all\n" + 
+				"select md5(to_char(random(), '0.9999999999999999')) u\n" + 
+				"union all\n" + 
+				"select md5(to_char(random(), '0.9999999999999999')) u\n" + 
+				"union all\n" + 
+				"select md5(to_char(random(), '0.9999999999999999')) u\n" + 
+				")\n" + 
+				"select u from r where not exists(select 1 from sys_user where username = r.u) limit 1";
+			var usernameRow = this.query(sql).rows[0];
+		} while(usernameRow == null);
+	
+		userRow = {id : this.nextId("SEQ_ENTITY"), 
+		               username : usernameRow.u, 
+		               login_type: 'G', password : null, 	// 账号默认为使用个人全局账号，用户名只是占个位子，所以密码为空
+		               node : node, status : 'N', 
+		               email : person.email, mobile : person.mobile,
+		               remarks : 'auto generated for ' + person.name,
+		               person : person.id
+		               };		
+		this.insertRow('sys_user', userRow);
+	}
+	this.insertRow('user_role_dispatch', {id : $SQL("nextval('seq_nonentity')"), sys_user : userRow.id, sys_role : role});
+	
+	return this.query('select u.*, p.name from sys_user u, person p where u.id=? and p.id = u.person', [userRow.id]).rows[0];
+}
+
+d2js.findEmployLog = function(person, roleId, node){
+	var sql = "select * from employ_log where node = :node and sys_role = :role and person = :person";
+	return this.query(sql, {node : node, role : roleId, node : node}).rows[0];
+}
+
+d2js.startEmployLog = function(person, nodeId, userId, roleId){
+	var rcd = {  
+	    id : $SQL("nextval('seq_nonentity')"), person : person.id, node : nodeId, start_date : new Date(), sys_role : roleId, sys_user : userId, status : 'A' 
+	};
+	this.insertRow('employ_log', rcd);
+}
+
+d2js.stopEmployLog = function(employLog){
+	this.execute("update employ_log set end_date = now(), status = 'F' where id=?", [employLog.id]);
+}
+
+d2js.destroyPerson = function(params, rcd){
+	// this.actas('person.delete', 'person', rcd.id, rcd);
+	this.deleteRow('person', rcd);
+};
+
+
+d2js.fetch=function(params){
+     logger.error("hubin" + params.employeeNo );
+		sql{.
+		select em.id id,em.employee_no, em.state,em.nodes,em.sys_stations,
+			pe.id person_id,pe.password,pe.name,pe.address,pe.tel,pe.mobile,
+			pe.wechat,pe.username,pe.email,pe.birth,pe.gender,pe.id_card, 
+			array_to_string(array(select name from node where id = any(em.nodes)), ',') node_names
+		from employee em, person pe where pe.id = em.person
+		and exists (select * from nd where id = any(em.nodes))
+	
+		sql{.?(params.name)
+			 	and strpos(pe.name, :name) > 0 
+		.}
+		
+		sql{.?(params.username)
+			 	and strpos(pe.username, :username) > 0 
+			 
+		.}
+		
+		sql{.?(params.employeeNo)
+			 	and pe.tag->>'employeeNo' =:employeeNo
+			 
+		.}
+		sql{.?(params.level)
+			 	and pe.tag->>'level' =:level
+			 
+		.}
+		sql{.?(params.cheakusername)
+			 	and pe.tag->>'name' =:cheakusername
+			 
+		.}
+		sql{.?(params.cabinCrewInspector)
+			 	and pe.tag->>'cabinCrewInspector' =:cabinCrewInspector
+			 
+		.}
+		sql{.?(params.cabinCrew)
+			 	and pe.tag->>'cabinCrew' =:cabinCrew
+			 
+		.}
+		sql{.?(params.bClassTeacher)
+			 	and pe.tag->>'bClassTeacher' =:bClassTeacher
+			 
+		.}
+		sql{.?(params.longFlightInstructor)
+			 	and pe.tag->>'longFlightInstructor' =:longFlightInstructor
+			 
+		.}
+		sql{.?(params.internationalQualificationTraining)
+			 	and pe.tag->>'internationalQualificationTraining' =:internationalQualificationTraining
+			 
+		.}
+		sql{.?(params.threeHundredQualification)
+			 	and pe.tag->>'threeHundredQualification' =:threeHundredQualification
+			 
+		.}
+		sql{.?(params.boutique)
+			 	and pe.tag->>'boutique' =:boutique
+			 
+		.}
+		sql{.?(params.Announcer)
+			 	and pe.tag->>'Announcer' =:Announcer
+			 
+		.}
+		sql{.?(params.Lhasa)
+			 	and pe.tag->>'Lhasa' =:Lhasa
+			 
+		.}
+		sql{.?(params.specialCharter)
+			 	and pe.tag->>'specialCharter' =:specialCharter
+			 
+		.}
+		sql{.?(params.cadre)
+			 	and pe.tag->>'cadre' =:cadre
+			 
+		.}
+		sql{.?(params.teacher)
+			 	and pe.tag->>'teacher' =:teacher
+			 
+		.}
+	   sql{.?(params.foreman)
+			 	and pe.tag->>'foreman' =:foreman
+			 
+		.}
+		
+		
+	.}
+	
+	sql = this.appendSort(sql, params._sorts);
+	logger.error('account exist ');
+	return this.query(this.nodeSql(params, findAncientTypes('PERSON')) + sql, params,params._page);
+
+};
+
+d2js.destroy = function(rcd){
+};
+
+
+
+d2js.create = function(rcd){
+	rcd.username=rcd.employee_no;
+	$V(this,rcd, {id : [],  
+		name : [V.notNull,V.longest(200),],  
+		address : [V.longest(200),],  
+		tel : [V.reg(/^[0-9]{3}[-]?[0-9]{1,12}$/,'不符合指定的格式')],     
+		mobile : [V.reg(/^[0-9]{3,20}$/,'不符合指定的格式'),V.personUnique('person')],  
+		wechat : [V.longest(40),V.personUnique('person')],  
+		employee_no : [V.notNull,V.longest(40), V.personUnique('person')],  
+		email:[V.email,V.personUnique('person')]
+	});
+	if(rcd.nationality instanceof Array){
+		rcd.nationality = $ARRAY('varchar', rcd.nationality);
+	} else {
+		rcd.nationality = $ARRAY('varchar', [rcd.nationality]);
+	}
+	
+	rcd.id = this.nextId("seq_entity");
+	this.actas('person.add', 'person', rcd.id, rcd);
+	
+	
+	var flds = ["id","name","photo","address","tel","birth","mobile","email","wechat","username","gender","id_card","tag"];
+	if(rcd.password && rcd.password.length){
+		flds.push("password");
+	}
+	this.insertRow('person', rcd, flds);
+
+	return rcd.id;		
+};
+
+d2js.modify = function(rcd){
+	if(rcd.person_id){
+		rcd.id=rcd.person_id;
+	}
+	rcd.username=rcd.employee_no;
+	$V(this,rcd, {id : [],  
+		name : [V.notNull,V.longest(200),],  
+		address : [V.longest(200),],  
+		tel : [V.reg(/^[0-9]{3}[-]?[0-9]{1,12}$/,'不符合指定的格式')],     
+		mobile : [V.reg(/^[0-9]{3,20}$/,'不符合指定的格式'),V.personUnique('person')],  
+		wechat : [V.longest(40),V.personUnique('person')],  
+		employee_no : [V.notNull,V.longest(40), V.personUnique('person')],  
+		email:[V.email,V.personUnique('person')]
+	});
+	if(rcd.nationality instanceof Array){
+		rcd.nationality = $ARRAY('varchar', rcd.nationality);
+	} else {
+		rcd.nationality = $ARRAY('varchar', [rcd.nationality]);
+	}
+	
+	var flds = ["id","name","photo","address","tel","birth","mobile","email","wechat","username","gender","id_card","tag"];
+	if(rcd.password && rcd.password.length){
+		flds.push("password");
+	}
+	
+	//this.actas('person.edit', 'person', rcd.id, rcd);
+	this.updateRow('person', rcd, flds);
+	
+};
+
+V.personUnique = function(table, tableField, primaryDesc){	
+	return {
+		name : 'personUnique',	
+		check : function(v, fld, rcd,d2js){
+			if(v==null||v=='') return;
+			var pk = 'id';
+			if(primaryDesc == null){
+				primaryDesc = {id : rcd.id};
+			} else {
+				for(var k in primaryDesc){
+					if(primaryDesc.hasOwnProperty(k)){
+						pk = k;
+						break;
+					}
+				}
+			}
+			
+			if(d2js.executor.isPostgreSQL()){
+				var sql = 'select 1 from ' + table + ' where  (mobile=? or wechat=? or username=? or email=?)';
+			}
+			if(primaryDesc[pk] != null){
+				sql += ' and ' + pk + ' <> ?';
+			}
+			sql += ' limit 1';
+			var r = (primaryDesc[pk] == null) ? d2js.query(sql, [v,v,v,v]) : d2js.query(sql, [v,v,v,v, primaryDesc[pk]]);
+			if(r.rows.length){
+				return '取值为' + v + '的记录已经存在';
+			}
+		}
+	};
+};
+

@@ -1,0 +1,51 @@
+<!-- This is just an additional tools after we use a IDE env. -->
+<project name="org.siphon.d2js" basedir="." default="update-d2js">
+	<property file="build.properties" />
+	
+	<patternset id="not-web-content">
+		<exclude name="**/WEB-INF/web.xml" />
+		<exclude name="**/WEB-INF/config/**" />
+		<exclude name="**/META-INF/**" />
+		<exclude name="**/*-test/" />
+		<exclude name="**/guide/" />
+		<exclude name="**/bookstore/" />
+		<exclude name="**/test/" />
+		<exclude name="**/*.html" />
+		<exclude name="**/*.jssp" />
+		<exclude name="**/molecule-dev/" />
+		<exclude name="**/molecules/*" />
+	</patternset>
+	
+	<patternset id="molecules">
+		<include name="**/molecules/*.html" />
+		<exclude name="**/molecules/upgrade.html"/>
+		<exclude name="**/molecules/upgrade.md"/>
+		<exclude name="**/molecules/blocks.html"/>
+	</patternset>
+	
+	<target name="update-d2js" >
+		<property name="file.d2js.zip" value="${dir.temp}/org.siphon.d2js.zip" />
+		<mkdir dir="${dir.temp}" />
+
+		<get src="https://codeload.github.com/inshua/d2js/zip/${d2js.branch}" dest="${file.d2js.zip}" />
+		
+		<delete dir="${dir.temp}/d2js-${d2js.branch}"></delete>
+		
+		<unzip dest="${dir.temp}" src="${file.d2js.zip}">
+			<patternset refid="not-web-content" />
+		</unzip>
+		
+		<unzip dest="${dir.temp}" src="${file.d2js.zip}">
+			<patternset refid="molecules"></patternset>
+		</unzip>
+		
+		<delete file="${file.d2js.zip}" />
+		<copydir src="${dir.temp}/d2js-${d2js.branch}/WebContent/jslib/" dest="${dir.web.jslib}" />
+		<copydir src="${dir.temp}/d2js-${d2js.branch}/WebContent/WEB-INF/jslib/" dest="${dir.server.jslib}" />
+		<copy file="${dir.temp}/d2js-${d2js.branch}/WebContent/WEB-INF/lib/org.siphon.d2js.jar" todir="${dir.server.lib}" />
+		<copydir src="${dir.temp}/d2js-${d2js.branch}/WebContent/molecules/" dest="${dir.web.molecule}" />
+		
+		<delete dir="${dir.temp}" />
+	</target>
+
+</project>

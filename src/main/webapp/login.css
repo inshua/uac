@@ -1,0 +1,155 @@
+/* reset */
+body {
+    margin: 0;
+}
+img {
+    border-style: none;
+}
+button,
+input {
+  font: inherit; /* opinionated */
+  margin: 0;
+}
+button,
+input {
+    overflow: visible;
+    border: none;
+}
+button {
+    text-transform: none;
+    border: none;
+    padding: 0;
+}
+
+/* ȫ������ */
+html {
+    font-family: 'Microsoft Yahei';
+}
+
+/* LOGO
+.logo {
+    position: absolute;
+    left: 47px;
+    top: 50px;
+    width: 219px;
+    height: 58px;
+    background-image: url(./images/login-logo.png);
+} */
+
+/* ����ͼ */
+.banner {
+    float: left;
+    width: 100%;
+    height: 900px;
+    background-image: url(./images/login-image.png);
+    background-size: auto 100%;
+    filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(
+        src='./images/login-image.png',
+        sizingMethod='clip');
+}
+
+/* �Ҳ���� */
+.panel {
+    position: absolute;
+    right: 0;
+    width: 560px;
+    height: 900px;
+    background-color: #364760;
+    background-image: url(./images/login-background.png);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+}
+.panel-body {
+    position: absolute;
+    top: 50%;
+    left: 16%;
+    right: 15%;
+    height: 354px;
+    margin-top: -177px;
+}
+
+/* ��¼�� */
+.main-title {
+    margin-right: auto;
+    margin-left: auto;
+    font-size: 31px;
+    color: #ffffff;
+}
+.split {
+    display: inline-block;
+    height: 28px;
+    border-right: solid 1px #d3d7e2;
+    margin: 0 10px 0 8px;
+    vertical-align: sub
+}
+.sub-title {
+    line-height: 31px;
+    font-size: 17px;
+    vertical-align: baseline;
+    color: #d3d7e2;
+}
+.message {
+    margin-top: 10px;
+    margin-bottom: -15px;
+    color: #ff3333;
+}
+.clear-float {
+    clear: both;
+}
+.input-group {
+    height: 50px;
+    padding-top: 38px;
+}
+.input {
+    width: 336px;
+    height: 50px;
+    line-height: 50px;
+    padding: 0px 16px;
+    border-radius: 4px;
+}
+.small-input {
+    width: 102px;
+    height: 50px;
+    line-height: 50px;
+    border-radius: 4px;
+    padding: 0px 16px;
+}
+.chaptcha {
+    width: 90px;
+    height: 36px;
+    margin-left: 17px;
+    vertical-align: middle;
+}
+.change {
+    font-size: 14px;
+    text-decoration: underline;
+    color: #3771c5;
+    margin-left: 10px;
+    cursor: pointer;
+}
+.btn {
+    width: 384px;
+    height: 50px;
+    border-radius: 4px;
+    font-size: 18px;
+    cursor: pointer;
+}
+.btn-primary {
+    color: #ffffff;
+    background-color: #3771c5;
+    margin-right: 16px;
+}
+.btn-minor {
+    color: #000000;
+    background-color: #c7defe;
+}
+
+/* �������ʽ */
+#username {
+    background: white url(./images/login-icon-user.png) 8px no-repeat;
+    padding-left: 32px;
+}
+#pw {
+    background: white url(./images/login-icon-password.png) 8px no-repeat;
+    padding-left: 32px;
+}

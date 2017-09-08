@@ -1,0 +1,106 @@
+[% response.contentType="plain/text"; %][%
+ 	var tb = JSON.parse(request.tableDef);
+	
+	tb.nodeColumn = tb.columns[tb.columns.find(function(col){return col.parentTable == 'node';})];
+
+	imports('./jssp-lib/codegen.js');
+%]
+function listActions(){
+	return [{name : '查询[%=tb.name%]', code : '[%=tb.code%].query', status : 'N'},
+	        {name : '增加[%=tb.name%]', code : '[%=tb.code%].add', status : 'N', dependence : '[%=tb.code%].query'}, 
+	        {name : '编辑[%=tb.name%]', code : '[%=tb.code%].edit', status : 'N', dependence : '[%=tb.code%].query'},
+	        {name : '删除[%=tb.name%]', code : '[%=tb.code%].delete', status : 'N', dependence : '[%=tb.code%].query'}];
+}
+
+if(typeof(ListOfValues)!='undefined'){
+[% tb.columns.filter(function(col){return col.listOfValues;}).forEach(function(col){ %]
+ 	ListOfValues.[%=tb.code + '_' + col.code %] = [%~ col.listOfValues %];
+[% });%]
+}
+function getModelDefs(){ 
+	var defs = 
+		{[%= tb.code %] :
+			  {
+				url   : '../模块/[%= tb.code %].d2js', 
+				fields : [ 
+[% tb.columns.forEach(function(col){ %]
+					{ name: '[%= col.code %]', type: '[%= dbTypeToExtFiledType(col.type) %]', useNull: true,[% if(col.defaultValue){ %] defaultValue: [%~ col.defaultValue %] [%}%]},
+[% }); %][%if(tb.nodeColumn){%] 
+					{name : 'node_name', type : 'string'}[%}%]				
+				],
+			    newItem : function(store){
+			    	return {'id' : null};
+			    },
+			    sorters: [],		// {property : , direction: 'asc' | 'desc'},
+			    validations : [
+[% tb.columns.forEach(function(col){ 
+	if(col.notNull){ %]
+					{type: 'presence', field: '[%= col.code %]'},
+	[%} if(col.length){ %]
+					{type: 'length', field: '[%= col.code %]', [%= col.minLength ? 'min:' + col.minLength + ',': '' %] max : [%= col.length %]},
+	
+[%  }}); %]			                   			     
+			    ]
+			}
+		};
+	return defs;
+}
+
+function createListUiDef(){
+[%	cond(tb.columns.find(function(col){return col.parentTable == 'node';}) != -1, function(){ %]
+	var nodeStore = new Com.Softview.TreeStore({
+		model : 'Com.SoftView.NodeModel', url : '../uac/node.d2js', 
+		baseParams : {params : {_m : 'listAll'}}
+	});
+	nodeStore.q({types : [% var col = tb.nodeColumn; cond(col, function(){%]findAncientTypes([%~ tb.code.toUpperCase() %])[% }); %]});
+	nodeStore.load();
+	arguments.callee.nodeStore = nodeStore;
+[% }); %]
+
+	return {
+		searchCondition : [
+[% tb.columns.filter(function(itm){return itm.searchUiIndex;}).sort(function(itm){return itm.searchUiIndex})
+ 	.forEach(function(col){ %][% cond(col.listOfValues, function(){ %]
+					'[%= col.name %]:', {xtype: 'lovcombobox', argname : '[%= col.code %]', listOfValues : ListOfValues.[%=tb.code + '_' + col.code %], allowEmpty : true, value : ''},
+[%}, col.parentTable == 'node', function(){ %]
+					'[%= col.name %]:', {xtype : 'treecombobox', argname : '[%= col.code %]', store : nodeStore, displayField : 'name', valueField : 'id', width : 250},
+[%}, true, function(){ %]					
+					'[%= col.name %]:', {xtype : 'textfield', argname : '[%= col.code %]'},
+[% }); }); %]		                   		    		    
+		],
+		applyItem : '[%= tb.name %]',
+		store 	  : '[%= tb.code %]',
+		allowEdit : allowed['[%= tb.code %].edit'],
+		allowDelete : allowed['[%= tb.code %].delete'],
+		allowAdd	: allowed['[%= tb.code %].add'],
+		columns : [
+[% tb.columns.filter(function(col){return !col.primary}).forEach(function(col){
+	cond(col == tb.nodeColumn,function(){ %]
+				{ header: '[%= col.name %]', dataIndex: 'node_name', flex : 1},
+		[%}, col.listOfValues, function(){ %]
+				{ header: '[%= col.name %]', dataIndex: '[%= col.code %]', flex : 1, renderer : ListOfValues.renderer('[%=tb.code + '_' + col.code %]')},
+		[%}, true, function(){%]		
+				{ header: '[%= col.name %]', dataIndex: '[%= col.code %]', flex : 1},
+		[% });%] 
+	[%}); %]			           
+		]
+	};
+}
+
+function createEditFormDef(){
+	
+	return {
+		applyItem : '[%= tb.name %]',
+		items :[
+[% tb.columns.filter(function(itm){return itm.formUiIndex;}).sort(function(itm){return itm.formUiIndex})
+	.forEach(function(col){ %][% cond(col.listOfValues, function(){ %]
+					{ name : '[%= col.code %]', fieldLabel: '[%= col.name %]', xtype: 'lovcombobox', listOfValues : ListOfValues.[%=tb.code + '_' + col.code %]},
+[%}, col.parentTable == 'node', function(){ %]
+					{ name : '[%= col.code %]', fieldLabel: '[%= col.name %]', xtype : 'treecombobox', store : createListUiDef.nodeStore, displayField : 'name', valueField : 'id', width : 250},
+[%}, true, function(){ %]					
+					{ name : '[%= col.code %]', fieldLabel: '[%= col.name %]', xtype: 'textfield',[%= col.normalLength ? 'size:'+ col.normalLength + ',' : '' %]},
+[% }); }); %]		        			                       
+            	]
+	};
+}
+

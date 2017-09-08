@@ -1,0 +1,83 @@
+[% 	if(request._la == 'true'){
+		return out.printJson([{name : '查询系统角色代码表', code : 'sys_role_code.query', status : 'N'},
+		        {name : '增加系统角色代码表', code : 'sys_role_code.add', status : 'N', dependence : 'sys_role_code.query'}, 
+		        {name : '编辑系统角色代码表', code : 'sys_role_code.edit', status : 'N', dependence : 'sys_role_code.query'},
+		        {name : '删除系统角色代码表', code : 'sys_role_code.delete', status : 'N', dependence : 'sys_role_code.query'}]);
+ 	}
+	var anonymous = request.anonymous;
+	if(session.user == null && !anonymous){
+		return response.sendRedirect(website + 'index.jssp');
+	}
+%]<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>系统角色代码表</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    [% this.includeJssp('../common/include_lib.jssp'); %]    
+</head>
+<body>
+
+    <div molecule="TableList" table="sys_role_code" edit-dialog="dialog1">
+        <h1>系统角色代码表</h1>
+        <div>
+            <form class="form-inline text-right">
+            
+                <button molecule="SearchButton">Search</button>
+                [% if(session.user.allowed['sys_role_code.add']){ %]                
+                <button molecule="AddButton">Add</button>
+                [% } %]            
+            </form>
+        </div>
+        <div molecule="TableError"></div>
+
+        <table molecule="List" allow-remove="[%= session.user.allowed['sys_role_code.delete'] %]">
+            <thead>
+                <tr>
+                    <th molecule="CheckHeader" col="id"></th>
+					<th molecule="Header" sortable="true" col="code" text="角色代码"></th>
+		 
+					<th molecule="Header" sortable="true" col="meaning" text="含义"></th>
+		 
+					<th molecule="Header" sortable="true" col="allow_node_types" text="允许出现的单位类型"></th>
+				                               
+	                [% if(session.user.allowed['time_selector.edit']){ %]                
+	                	<th data-t="rows,N,id" renderer="editLink"></th>
+	                [% } %]               
+                </tr>
+            </thead>
+        </table>
+    </div>
+
+    <div molecule="Dialog" title="系统角色代码表" id="dialog1" table="sys_role_code">
+        <form class="table-form">
+					
+			<div molecule="FormItem" col="code" text="角色代码"><input type="text" molecule="Input"></div>					
+					
+			<div molecule="FormItem" col="meaning" text="含义"><input type="text" molecule="Input"></div>					
+					
+			<div molecule="FormItem" col="allow_node_types" text="允许出现的单位类型">
+            	 <div molecule="DropDownList" table="node_types" value-col="name" display-col="name" select="multi" 
+            	 		paging="false" show-header="false" data="#sys_role_code,curr,allow_node_types">
+                   	<tr>
+				        <m:th molecule="Header" col="name" text=""></m:th>				        
+			        </tr>
+				</div>				
+            </div>
+								
+		        			                               
+        </form>
+    </div>
+    
+</body>
+<script>
+	new d2js.DataTable('node_types', '../uac/node.d2js', {silent : false}).load('listNodeTypes');
+			
+    var table = new d2js.DataTable('sys_role_code', '../uac/sys_role_code.d2js');
+    table.on('load', function (error) { d2js.render(); });
+    table.load('fetch');
+    
+</script>
+</html>
+

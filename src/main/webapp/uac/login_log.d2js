@@ -1,0 +1,71 @@
+d2js.fetch = function(params){
+	this.checkPrivilege("uac.login_log.query");
+	sql{.
+		select p.name p_name,l.* from login_log l,person p where l.person = p.id
+	
+		sql{.?(params.name)
+			and strpos(p.name,:name) > 0
+		.}
+		sql{.?(params.result)
+			and l.result = :result
+		.}
+		code{.
+			if(!params.start_time){
+				sql{. and l.login_d >= current_date - integer '1'.}
+			}else{
+				sql{. and l.login_d >= :start_time .}
+			}
+		.}
+		sql{.?(params.end_time)
+			and l.login_d <= :end_time
+		.}
+		sql{.?(params.login_mode)
+			and l.login_mode = :login_mode
+		.}
+		order by l.login_d desc, p_name asc
+	.}
+	
+	return this.query(sql,params,params._page);
+
+}
+
+
+
+
+d2js.create = function(){
+	var rcd = {
+		person : this.session.user.id, 
+		login_d : this.session.user.login.login_d, 
+		action:this.session.user.login.action,
+		description: this.session.user.login.description,
+		address:this.request.getHeader('Host').match(/[\w|\.]*/)[0],
+		session_id : this.session.getId() + '', 
+		result:this.session.user.login.result?this.session.user.login.result:"S",
+		result_desc:this.session.user.login.result_desc && this.session.user.login.action != 'O'?this.session.user.login.result_desc:'',
+		login_mode:'B',
+		device_id:''
+			};
+				
+ 	rcd.id = this.nextId('login_log_id_seq');
+	return this.insertRow('login_log', rcd);
+}
+
+
+
+
+d2js.getDevice = function(userAgent){
+	var index;
+	if(( index= userAgent.indexOf('Android')) != -1){
+	
+		return 'android_'+ userAgent.match(/zh-CN\;[\w]* Build/);
+	}else if((index = userAgent.indexOf('Iphone')) != -1){
+		return 'iphone_'+ userAgent.substr(index);
+	}else{
+		return userAgent;
+	}
+}
+
+d2js.setAction = function(params){
+	this.session.user.login.action = params.action;
+	this.session.user.login.result_desc = '切换模块到'+params.modeName;
+}

@@ -1,0 +1,51 @@
+d2js.fetch = function(params){
+	this.checkPrivilege('department.query');
+	sql{.
+		WITH recursive p as(
+		     select node.* from node where node.type='DEPT'
+		     sql{.?(params.name)
+		     	and strpos(node.name,:name) >0
+		     .}
+		     sql{.?(params.parent_id)
+		     	and node.parent_id = :parent_id
+		     .}
+		)select n.name node_name,p.* from node n ,p where n.id = p.parent_id
+	.}
+	return this.query(sql,params,params._page);
+}
+
+d2js.exports.listCompanyWithDept = 
+d2js.listCompanyWithDept = function(params){
+	var sql = "select * from uac.node union select * from uac.node where type='DEPT'";
+	return this.query(sql,params);
+}
+
+d2js.validate = function(rcd, action){
+	$V(this,rcd, {
+		name : [V.notNull,V.longest(30)],	//V.uniqueInNode('uac.node', 'name')  
+		parent_id : [V.notNull],
+		'def,address': [V.notNull,V.longest(40)], 
+		'def,contactMan' : [V.notNull,V.longest(20)],
+		'def,tel' : [V.notNull,V.longest(11)],
+		'def,remark':[V.longest(2000)],
+	});
+}
+
+d2js.create = function(rcd){
+	this.validate(rcd, 'create')
+	rcd.id = this.nextId("node_id_seq");
+	rcd.type ="DEPT";
+	this.actas('department.add', 'uac.node', rcd.id, rcd);
+	return this.insertRow('uac.node', rcd, ["id","name","parent_id","type","def"]);
+};
+
+d2js.modify = function(rcd){
+	this.validate(rcd, 'modify')
+	this.actas('department.edit','uac.node', rcd.id, rcd);
+	return this.updateRow('uac.node', rcd, ["id","name","parent_id","def"]);
+}
+
+d2js.destroy = function(rcd){
+	this.actas('department.delete','uac.node',rcd.id,rcd);
+	return this.deleteRow("uac.node",rcd);
+}

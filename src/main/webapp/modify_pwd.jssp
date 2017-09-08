@@ -1,0 +1,152 @@
+[% 
+	
+  	var random = session.random;
+ %]
+<link href="jslib/bootstrap-3.3.4/css/bootstrap.css" rel="stylesheet"></link>
+<script src="jslib/jquery-1.10.2.js"></script>
+<script src="jslib/sha1.js"></script>
+<script type="text/javascript">
+	var random=[%~random%];
+	function encrypt(pwd){
+		var pwd2=CryptoJS.SHA1(pwd);
+		var arrRandom = [];
+		for(var i=0; i<random.length; i++)
+			arrRandom.push(random.charCodeAt(i));
+		var arrInt = [];
+		for(var i=0; i<arrRandom.length;i+=4){
+			var int = (arrRandom[i] << 24) | 
+						(arrRandom[i+1] << 16) |
+						(arrRandom[i+2] << 8) |
+						arrRandom[i+3];
+			arrInt.push(int);
+		}
+		var concated = arrInt.concat(CryptoJS.SHA1(pwd2).words);
+		var b = CryptoJS.SHA1({words : concated, sigBytes : 40});
+		var arr=[];
+		for(var i=0;i<5;i++){
+			var r = pwd2.words[i] ^ b.words[i];
+			arr.push(r);
+		}
+		return JSON.stringify(arr);
+	}
+
+	$(document).ready(function(){
+		var error = false;
+		$("#oldpass").blur(function(){
+			var oldpass = $("#oldpass").val().toUpperCase();
+			/* if(oldpass =='') {
+				showError('oldpass', '密码不能为空');
+				error = true;
+				return;
+			} */
+			oldpass=encrypt(oldpass);
+			//CryptoJS.SHA1
+			$.post("login.d2js?_m=testPwdByUsername", {oldpass:oldpass}, function(data){
+				error = true;
+				if(!data.success) {
+					showError('oldpass', '密码错误');
+				} else {
+					error=false;
+					$("#oldpass").css({"border-color":"green"});
+					$("#oldpassTip").css({"display":"none"});
+				}
+			},'json');
+		});
+
+		$("#newpass").blur(function(){
+			var newpass = $("#newpass").val();
+			error = true;
+			if(newpass == '') {
+				showError('newpass', '新密码不能为空');
+			}
+			else {
+				error=false;
+				$("#newpass").css({"border-color":"green"});
+				$("#newpassTip").css({"display":"none"});
+			}
+		});
+
+		$("#newpassAgain").blur(function(){
+			error = true;
+			var newpass = $("#newpass").val();
+			if(newpass == '') {
+				showError('newpass', '新密码不能为空');
+				return;
+			}
+
+			var newpassAgain = $("#newpassAgain").val();
+			if(newpassAgain != newpass) {
+				showError('newpassAgain', '与输入的新密码不一致');
+			}
+			else {
+				error=false;
+				$("#newpassAgain").css({"border-color":"green"});
+				$("#newpassAgainTip").css({"display":"none"});
+			}
+		});
+		
+		$("#submit").click(function(event){
+			$("#oldpass").blur();
+			$("#newpass").blur();
+			$("#newpassAgain").blur();
+			if(!error) {
+				var newpass = $("#newpass").val().toUpperCase();
+				newpass=CryptoJS.SHA1(newpass).toString();
+				$.post('login.d2js?_m=userModifyPwd', {newpass:newpass}, function(data) {
+					$("#modifySuccess").css({'display':'inline'});
+					$("#modifySuccess").hide(2000);
+					window.location="front/main.jssp";
+				});
+			}
+			event.preventDefault();
+			error=false;
+			$("#oldpass").val("");
+			$("#newpass").val("");
+			$("#newpassAgain").val("");
+			return false;
+		});
+	});
+
+	function showError(formSpan, errorText) {
+		$("#" + formSpan).css({"border-color":"red"});
+		$("#" + formSpan + "Tip").empty();
+		$("#" + formSpan + "Tip").append(errorText);;
+		$("#" + formSpan + "Tip").css({"display":"inline"});
+	}
+</script>
+</head>
+<body>
+
+<div class=".container" style="margin-top:100px;width:250%;">
+	<form class="form-horizontal" role="form">
+	  <div class="form-group">
+	    <label for="oldpass" class="col-sm-2 control-label">旧密码</label>
+	    <div class="col-sm-10">
+	      <input type="password" class="form-control" style="width:250px;" id="oldpass" placeholder="Old Password"><span id="oldpassTip" style="display:none;color:red;"></span>
+	    </div>
+	  </div>
+	  <div class="form-group">
+	    <label for="newpass" class="col-sm-2 control-label">新密码</label>
+	    <div class="col-sm-10">
+	      <input type="password" class="form-control" style="width:250px;" id="newpass" placeholder="New Password"><span id="newpassTip" style="display:none;color:red;"></span>
+	    </div>
+	  </div>
+	  <div class="form-group">
+	    <label for="newpassAgain" class="col-sm-2 control-label">再次确认新密码</label>
+	    <div class="col-sm-10">
+	      <input type="password" class="form-control" style="width:250px;" id="newpassAgain" placeholder="Again New Password"><span id="newpassAgainTip" style="display:none;color:red;"></span>
+	    </div>
+	  </div>
+	  <br><br>
+	  
+	  <div>
+	 	 <button type="submit" class="btn btn-primary" id="submit" style="text-align:center;">确认修改</button>
+	 	  <label class="col-sm-2 control-label"></label>
+	 	 <button type="reset" class="btn btn-default" id="reset" style="text-align:center;">重置</button>
+	  </div>
+	</form>
+</div>
+<div id="modifySuccess" class="alert alert-success alert-dismissable" style="width:50%;margin-left:40%;display:none;">
+  <strong>Success!</strong> 你已成功修改密码！
+</div>
+

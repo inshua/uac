@@ -1,0 +1,452 @@
+[% 	if(request._la == 'true'){
+		return out.printJson([{name : '查询系统角色', code : 'uac.sys_role.query', status : 'N'},
+		        {name : '增加系统角色', code : 'uac.sys_role.add', status : 'N', dependence : 'uac.sys_role.query'}, 
+		        {name : '编辑系统角色', code : 'uac.sys_role.edit', status : 'N', dependence : 'uac.sys_role.query'},
+		        {name : '删除系统角色', code : 'uac.sys_role.delete', status : 'N', dependence : 'uac.sys_role.query'}]);
+ 	}
+	var anonymous = request.anonymous;
+	if(session.user == null && !anonymous){
+		return response.sendRedirect(website + 'index.jssp');
+	}
+%]<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>系统角色</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    [% this.includeJssp('../common/include_lib.jssp'); %]  
+    
+</head>
+<body>
+	<template>
+	    <div molecule-def=SysRole>
+	    	<div class="button-group" >
+	    		<ul class="nav nav-tabs" id="roleChange">
+	    	[% 
+	    		if(session.user.roles.length > 1){
+	    		 	session.user.roles.forEach(function(role, index){ %]
+	    		 		<li role="presentation"  [%if(index == 0){%]class="active"[%}%] data-value="[%=index%]"><a >[%=role.name%]</a></li>
+	    		 	[%})
+	    	}%]
+	    		</ul>
+	    	</div>
+		    <div molecule="TableList" table="ns_sys_role,sys_role" edit-dialog="roleDialog" id="ParentSelect">
+		        <h1 class="page-title">系统角色</h1>
+		        <div class="search-bar">
+		            <form molecule="SearchForm" style="float: none;">
+		            
+		            	<div class="form-row">
+							<div molecule="SearchFormItem" col="node" text="所属单位：" >
+				            	 <div molecule="DropDownTree" table="ns_sys_role,all_company" value-col="id" display-col="name" autocomplete-col="name" select="single" 
+				            	 		paging="false" show-header="false" data="node" style="min-width:197">
+				                   	<tr>
+								        <m:th molecule="TreeNode" col="name" text="Name"></m:th>				        
+							        </tr>
+								</div>				
+				            </div>
+							
+							<div molecule="SearchFormItem" col="name" text="角色名称：">
+		                    	<input type="text" molecule="Input">
+		                	</div>
+							
+						    <div molecule="SearchFormSelectItem" col="status" text="状态：" dict="sys_role_status">                    
+		               		</div>
+					  	
+					  	</div>
+					  	<div class="form-row btn-row">
+					  	    <button molecule="SearchButton" role="search">搜索</button>
+					  	</div>         
+		            </form>
+		          
+		        </div>
+		        <div class="tool-bar">
+	                [% if(session.user.allowed['uac.sys_role.add']){ %]                
+	                <button molecule="AddButton" role="add">新增</button>
+	                [% } %]
+	                [% if(session.user.allowed['uac.sys_role.delete']){ %]                
+	                <button molecule="DelButton" role="delete">删除</button>
+	                [% } %]
+		        </div>
+		        <div molecule="TableError"></div>
+		        <div class="main-table">
+		        <table id="grdMain" molecule="List" checkable="true" select="single" allow-remove="[%= session.user.allowed['uac.sys_role.delete'] %]">
+		            <thead>
+		                <tr>
+		                	<th molecule="CheckHeader" col="id"></th>
+		                	
+							<th molecule="Header" col="node_name " text="所属单位"></th>
+		                
+							<th molecule="Header" col="name" text="角色名称"></th>
+							
+							<th molecule="Header" col="code" text="角色代码"></th>
+							
+							<th molecule="Header" col="role_level" text="角色级别"></th>
+				 
+							<th molecule="Header" col="status" dict="sys_role_status" renderer="dict|std" text="状态"></th>
+				 
+						  	[% if(session.user.allowed['uac.sys_role.edit']){ %]                
+			                	<th data-t="id" renderer="editLink">编辑</th>   
+			                [% } %]		                 					  		                     
+		 			
+		                </tr>
+		            </thead>
+		        </table>
+		        </div>
+		    </div>
+		
+		    <div molecule="Dialog" title="系统角色" data-size="large" id="roleDialog">
+		        <form class="table-form" onsubmit="return false">
+					<div molecule="FormItem" col="node" text="所属单位：">
+		            	 <div molecule="DropDownTree" table="ns_sys_role,all_company" value-col="id" display-col="name" autocomplete-col="name" select="single" 
+		            	 		paging="false" show-header="false" data="node" data-width="300">
+		                   	<tr>
+						        <m:th molecule="TreeNode" col="name" text="Name"></m:th>				        
+					        </tr>
+						</div>				
+		            </div>
+					
+					<div molecule="FormItem" col="name" text="角色名称："><input type="text" molecule="Input"></div>
+					
+					<div molecule="FormItem" col="code" text="角色代码："><input type="text" molecule="Input"></div>
+					
+					<div molecule="FormItem" col="role_level" text="角色级别："><input type="text" molecule="Input" collector="c|n|s"></div>
+										
+					<div molecule="FormItem" col="status" text="状态：" dict="sys_role_status">
+		                <select molecule="Select"></select>
+		            </div>
+							
+					<div molecule="FormItem" col="remarks" text="备注："><textarea molecule=TextArea cols=40 rows=5></textarea></div>			
+					
+		
+		        </form>
+		        
+		        <hr>
+		        <div molecule="TableList" table="ns_sys_role,sys_function" id="ParentSelect" paging=false>
+			        <table molecule="Tree" checkable="false" id="functionTable">
+			            <thead>
+			                <tr>		                	
+								<th molecule="TreeNode" col="name" text="名称"></th>
+								<th data-t="id" renderer="availableCheck">可用</th>		                
+							
+								
+								<th data-t="id" renderer="transferCheck">可转授</th>
+								<th data-t="id" renderer="forbidCheck">禁止</th>  
+	<!-- 							<th molecule="Header" col="dispatch_mode" text="mode"></th>    -->
+								<th molecule="Header" col="code" text="操作代码"></th>
+													
+								<th molecule="Header" sortable="false" col="status" dict="sys_function_status" renderer="dict|std" text="状态"></th>	   
+			                </tr>
+			            </thead>
+			        </table>
+		        </div>
+		        
+		    </div>
+		    
+			<script constructor>
+	    		var $el = this.$el;
+	    		
+	    		var dataset = d2js.dataset.create('ns_sys_role');
+				
+	    		Dicts.sys_role_status = {"N": "正常", "P": "暂停"}
+				Dicts.sys_role_open_mode = { "O": "不可转授", "T": "可转授", "D": "无权" }
+	    		Dicts.sys_function_status = { "N": "正常", "D": "禁用" };
+	    		
+			    var table = dataset.addTable('sys_role', '../uac/sys_role.d2js',{pageSize:10});			  	    
+			    table.on('load', function (error) { 
+			    	$el.render(dataset);
+			    	table.addColumn('dispatched_functions');
+			    });
+			    table.load('fetch');
+			  
+			    table.on('newrow', function (row) { 
+			    	row._set('node_scope','R');
+			    	row._set('status','N');
+			    });
+			    $('#roleDialog').on('willsubmit', function(e, canceller){
+			    	var tempDispath = getFunctionInfo();
+			    	tempDispath=tempDispath.filter(function(obj){
+						return obj.mode != "R";
+					});
+			    	table.curr.dispatched_functions=JSON.stringify(tempDispath);
+				});
+			    var allFunctions=dataset.addTable('sys_function', '../uac/sys_role.d2js');
+			    allFunctions.load({_m:'fetchDispatchedFunctions'});
+			    
+			    var allCompanys = dataset.addTable('all_company', '../common/node.d2js');
+			    allCompanys.on('load', function (error) { 
+			    	$el.render(dataset); 
+			    });
+			    allCompanys.load({_m:'listAll'});    
+			    
+			    var functions=dataset.addTable('detail_function', '../uac/sys_role.d2js');
+			    functions.on('load',function(error){
+			    	if(!error){
+			    		allFunctions.rows.forEach(function(row){
+				    		row.children = allFunctions.rows.filter(function(index){
+				    			return row.id==index.parent_id;
+				    		});
+				    		row.parent = allFunctions.find('id', row.parent_id);
+				    		row.allChildren=getAllChildrenNodes(row);	
+				    		row.allParent=getAllParentNodes(row);
+				    		row.sameLevel=getSameLevelNodes(row);
+				    		row.dependent=getDependence(row);
+				    		row.beDependent=getBeingDependents(row);
+				    		row.dispatch_mode=functions.find('id',row.id)&&functions.find('id',row.id).dispatch_mode!=""?functions.find('id',row.id).dispatch_mode:"R";
+				    	});
+				    	$el.render(dataset);
+			    	}
+			    });
+			    $(function(){
+			    	$el.on('tablelist.edit',function(){
+			    		functions.load({_m:'fetchDispatchedFunctions',"id":table.curr.id});
+			    	})
+			    });
+			    
+			    //获取当前行同级节点。返回数组
+			    function getSameLevelNodes(row){ 
+			    	var cr=new Array();
+			    	for(var i=0;i<allFunctions.rows.length;i++){
+			    		if(allFunctions.rows[i].parent_id==row.parent_id){
+			    			cr.push(allFunctions.rows[i]);
+			    		}
+			    	}
+			    	return cr;	
+			    }
+			    //获取当前行的所有子节点。返回数组			    
+			    function getAllChildrenNodes(row){	
+			    	var allRows=new Array();
+			    	for(var i=0;i<allFunctions.rows.length;i++){			    		
+			    		if(allFunctions.rows[i].parent_id==row.id){
+			    			allRows.push(allFunctions.rows[i]);
+			    			$.merge(allRows,getAllChildrenNodes(allFunctions.rows[i]));
+			    		}
+			    	} 
+			    	return allRows;			    		    	
+			    }
+			    
+			    //获取当前行的所有父节点.返回数组			    
+			    function getAllParentNodes(row){	
+			    	var allRows=new Array();
+			    	for(var i=0;i<allFunctions.rows.length;i++){			    		
+			    		if(allFunctions.rows[i].id==row.parent_id){
+			    			allRows.push(allFunctions.rows[i]);
+			    			$.merge(allRows,getAllParentNodes(allFunctions.rows[i]));
+			    		}
+			    	}
+			    	return allRows;			    		    	
+			    }
+			   //获取当前行所依赖的行 ，返回行
+			    function getDependence(row){
+			    	for(var i=0;i<allFunctions.rows.length;i++){
+			    		if(allFunctions.rows[i].code==row.dependence&&allFunctions.rows[i].parent_id==row.parent_id){
+			    			return allFunctions.rows[i];
+			    		}
+			    	}
+			    }
+			    //获取当前行被依赖的行，返回行数组
+			    function getBeingDependents(row){
+			    	var ds=new Array();
+			    	for(var i=0;i<allFunctions.rows.length;i++){
+			    		if(allFunctions.rows[i].dependence==row.code&&allFunctions.rows[i].parent_id==row.parent_id){
+			    			ds.push(allFunctions.rows[i]);
+			    		}
+			    	}
+			    	return ds;
+			    }
+			    function isEqual(rows,mode1,mode2){	
+			    	if(mode2){
+			    		for(var i=0;i<rows.length;i++){			    		
+				    		if(rows[i].dispatch_mode==mode1||rows[i].dispatch_mode==mode2){}else{return false;}
+				    	}
+			    	}else{
+			    		for(var i=0;i<rows.length;i++){			    		
+				    		if(rows[i].dispatch_mode==mode1){}else{return false;}
+				    	}
+			    	}
+			    	return true;
+			    }			    
+			    function setParentsMode(par,sRows,mode1,mode2){
+			    	if(mode2){
+			    		while(par&&(isEqual(sRows,mode1,mode2))){
+				    		setMode(par,isEqual(sRows,mode1)?mode1:"O");
+				    		sRows=par.sameLevel;
+				    		par=par.parent;				
+				    	}
+			    	}else{
+			    		while(par&&isEqual(sRows,mode1)){		
+				    		setMode(par,mode1);
+				    		sRows=par.sameLevel;
+				    		par=par.parent;	
+				    	}
+			    	}
+			    	
+			    }
+			    function setMode(rows,mode){			    	
+			    	if(rows&&rows.length>=0){
+			    		for(var i=0;i<rows.length;i++){
+			    			rows[i]._set("dispatch_mode",mode);
+			    		}
+			    	}else if(rows){
+			    		rows._set("dispatch_mode",mode);
+			    	}
+			    	d2js.collect();
+			    	$el.render(allFunctions);	
+			    	table.curr._set('dispatched_functions',JSON.stringify(getFunctionInfo()));
+			    }
+			   
+			   function getFunctionInfo(){
+				   var dispatched_functions=new Array();
+				   for(var i=0;i<allFunctions.rows.length;i++){
+					   if(allFunctions.rows[i].dispatch_mode){
+						   dispatched_functions.push({"id":allFunctions.rows[i].id,"type":allFunctions.rows[i].type,"mode":allFunctions.rows[i].dispatch_mode})
+					   }
+				   }
+				   return dispatched_functions;
+			   }
+			   
+			   function chooseRole(index){
+				   alert(index);
+			   }	 
+		       
+			    this.dispose = function() {
+				    console.info('sys_role dispose');
+					d2js.dataset.release('ns_sys_role');
+				}
+			   
+			   $("#roleChange").find("li").click(function(){
+				   $("#roleChange").find("li").removeClass("active");
+				   $(this).addClass("active");
+				   $.post('../uac/sys_role.d2js?_m=setRole',{idx : $(this).data('value')},function(info){
+					   table.reload();
+				   })
+			   })
+			   
+			   
+			   //可用
+			    d2js.Renderers.availableCheck = function(element,value){			    	
+			    	var row=d2js.findArg(arguments,'row');
+			    	var e=$(element);
+			    	if(row.type=="fun"){
+			    		var i=$(document.createElement('input')).appendTo(e);
+				    	i.attr('type','checkbox');
+				    	i.data('id', value);				    	
+				    	if(row.dispatch_mode=="O"||row.dispatch_mode=="T"){
+				    		i.prop("checked",true);
+				    	}
+			    		i.on('change',function(){	
+				    		if(i.is(':checked')){
+				    			setMode(row,"O");
+				    			setMode(row.allParent,"I");
+				    			setMode(row.allChildren.filter(function(index){return index.type=="fun"&&index.dispatch_mode!="T"}),"O");
+				    			setMode(row.allChildren.filter(function(index){return index.type=="sub"}),"O");
+				    			setParentsMode(row.parent,row.sameLevel,"O","T");
+				    			if(!isEqual(row.sameLevel,"O","T")){
+				    				setMode(row.allParent,"I");
+				    			}
+				    		}else{
+				    			setMode(row,"R");
+				    			setMode(row.allChildren,"R");
+				    			if(!isEqual(row.sameLevel,"O","T")){
+				    				setMode(row.allParent,"I");
+				    			}
+			    				setParentsMode(row.parent,row.sameLevel,"R");
+				    			
+				    			
+				    		}
+				    	});
+			    	}
+			    	
+			    }
+			    //可转授
+			    d2js.Renderers.transferCheck = function(element,value){
+			    	var row=d2js.findArg(arguments,'row');
+			    	var e=$(element);
+			    	var i=$(document.createElement('input')).appendTo(e);
+			    	i.attr('type','checkbox');
+			    	i.data('id', value);
+			    	if(row.dispatch_mode=="T"){
+			    		i.prop("checked",true);
+			    	}
+			    	i.on('change',function(){			    	
+			    		if(i.is(':checked')){				    			
+			    			setMode(row,"T");
+			    			setMode(row.dependent,"T");
+			    			setMode(row.allChildren,"T");
+			    			
+			    			if(row.allChildren.length!=0&&row.allChildren[0].type=="sub"){
+			    				setParentsMode(row,row.allChildren,"T");
+			    				if(!isEqual(row.sameLevel,"T")){
+			    					setMode(row.allParent,"I");
+			    					setParentsMode(row.parent,row.sameLevel,"O","T");
+			    				}
+			    			}else if(row.allChildren.length==0&&row.type=="sub"){
+			    				if(!isEqual(row.sameLevel,"T")&&row.parent.dispatch_mode!="O"&&row.parent.dispatch_mode!="T"){
+			    					setMode(row.allParent,"I");
+			    				}else if(!isEqual(row.sameLevel,"T")&&row.parent.dispatch_mode=="O"){
+			    					setParentsMode(row.parent,row.sameLevel,"O","T");
+			    				}else if(!isEqual(row.sameLevel,"T")&&row.parent.dispatch_mode=="T"){
+			    					setMode(row.parent,"O");
+			    					setParentsMode(row.parent,row.sameLevel,"T");
+			    				}else if(isEqual(row.sameLevel,"T")){
+			    					setParentsMode(row.parent,row.sameLevel,"T");
+			    				}
+			    			}else{
+			    				setParentsMode(row.parent,row.sameLevel,"T");
+			    			}
+			    		}else{
+			    			if(row.type=="sub"){
+			    				setMode(row,"R");
+			    			}else{
+			    				setMode(row,"O");
+				    			setMode(row.allChildren,"O"); 
+			    			}
+			    			setMode(row.allParent.filter(function(index){return index.dispatch_mode=="T"}),"O");	
+			    			setParentsMode(row.parent,row.sameLevel,"R");
+			    		}
+			    	});
+			    }
+			    //禁止
+			    d2js.Renderers.forbidCheck = function(element,value){
+			    	var row=d2js.findArg(arguments,'row');
+			    	var e=$(element);			    			    	
+					if(row.type=="sub"){
+						var i=$(document.createElement('input')).appendTo(e);
+				    	i.attr('type','checkbox');
+				    	i.data('id', value);
+				    	if(row.dispatch_mode=="D"){
+				    		i.prop("checked",true);
+				    	}
+				    	i.on('change',function(){
+				    		if(i.is(':checked')){				    			
+				    			setMode(row,"D");
+				    			setMode(row.beDependent,"D");
+				    			if(!isEqual(row.sameLevel,"D")&&row.parent.dispatch_mode=="T"){
+				    				setMode(row.parent,"O");
+				    				setParentsMode(row.parent.parent,row.parent.sameLevel,"O","T");
+				    			}else if(!isEqual(row.sameLevel,"D")&&row.parent.dispatch_mode !="O"){
+				    				setMode(row.allParent,"I");
+				    			}else if(isEqual(row.sameLevel,"D")){
+				    				if(row.parent.dispatch_mode=="T"||row.parent.dispatch_mode=="O"){
+				    					setMode(row.parent,"O");
+				    					setParentsMode(row.parent.parent,row.parent.sameLevel,"O","T");
+				    				}
+				    			}
+				    			
+				    		}else{
+				    			setMode(row,'R');
+				    			setMode(row.dependent,row.dependent&&row.dependent.dispatch_mode=="D"?'R':(row.dependent?row.dependent.dispatch_mode:'R'));
+				    		}
+				    	});
+			    	}
+			    	
+			    }
+			</script>
+			
+		</div>
+	</template>
+	<div molecule=SysRole></div>
+</body>
+
+</html>
+

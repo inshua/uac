@@ -1,0 +1,262 @@
+[% 	if(request._la == 'true'){
+		return out.printJson([{name : '查询岗位代码表', code : 'uac.sys_station.query', status : 'N'},
+		        {name : '增加岗位代码表', code : 'uac.sys_station.add', status : 'N', dependence : 'uac.sys_station.query'}, 
+		        {name : '编辑岗位代码表', code : 'uac.sys_station.edit', status : 'N', dependence : 'uac.sys_station.query'},
+		        {name : '删除岗位代码表', code : 'uac.sys_station.delete', status : 'N', dependence : 'uac.sys_station.query'}]);
+ 	}
+	var anonymous = request.anonymous;
+	if(session.user == null && !anonymous){
+		return response.sendRedirect(website + 'index.jssp');
+	}
+%]<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>岗位设置</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+[% this.includeJssp('../common/include_lib.jssp'); %]
+</head>
+<body>
+<template>
+		<div molecule-def='StationManage'>
+			<div molecule="TableList" table="ns_sys_station,sys_station" edit-dialog="ns_sys_station-dialog" >
+		        <h1 class="page-title">岗位管理</h1>
+		        <div class="search-bar">
+					<form molecule="SearchForm" style="float: none;">
+					    <div class="form-row">
+			                <div molecule="SearchFormItem" col="name" text="岗位名称：">
+			                    <input type="text" molecule="Input">
+			                </div>
+			                
+			                <div molecule="SearchFormItem" col="node" text="所属单位：">
+			                    <div molecule="DropDownTree" table="ns_sys_station,company" value-col="id"
+			                        display-col="name" autocomplete-col="name" select="single" paging="false"
+			                        show-header="false"
+			                        data="node"
+			                        data-width="200">
+				                    <m:th molecule="TreeNode" col="name" text="公司名称"></m:th>
+			                    </div>
+			                </div>
+			                
+			                <div molecule="SearchFormSelectItem" col="kind" text="岗位性质：" dict="sys_station_kind"></div>
+					    </div>
+					    <div class="form-row">
+					        <div molecule="SearchFormSelectItem" col="visibility" text="岗位可见性：" dict="sys_station_visibility"></div>
+					    </div>
+			            <div class="form-row btn-row">
+			                <button molecule="SearchButton" role="search">搜索</button>
+			            </div>
+						
+					</form>
+				</div>
+				<div class="tool-bar">
+			        [% if(session.user.allowed['uac.sys_station.add']){ %] 
+			        <button molecule="AddButton" role="add">添加</button>
+			        [% } %]
+		            [% if(session.user.allowed['uac.sys_station.delete']){ %] 
+		            <button molecule="DelButton" role="delete">删除</button>
+		            [% } %]
+				</div>
+				<div molecule="TableError"></div>
+				<div class="main-table">
+					<table id="grdMain" molecule="List" allow-remove="[%= session.user.allowed['uac.sys_station.delete'] %]" >
+						<thead>
+							<tr>
+								<th molecule="CheckHeader" col="id" text="ID"></th>
+								<th molecule="Header" sortable="false" col="name" text="岗位名称" ></th>
+								<th molecule="Header" sortable="false" col="node_name" text="所在单位" ></th>
+								<th molecule="Header" sortable="false" col="status" text="状态" dict="sys_station_status" renderer="dict|std"></th>
+								<th molecule="Header" sortable="false" col="visibility" text="可见性" dict="sys_station_visibility" renderer="dict|std"></th>
+								<th molecule="Header" sortable="false" col="kind" text="岗位性质" dict="sys_station_kind" renderer="dict|std"></th>
+								[% if(session.user.allowed['uac.sys_station.edit']){ %] 
+								<th data-t="id" renderer="editLink"></th> 
+								[% } %]
+							</tr>
+						</thead>
+					</table>
+		        </div>
+			</div>
+			
+			<div molecule="Dialog" title="岗位信息" id="ns_sys_station-dialog" data-size="large">
+					<form class="table-form" onsubmit="return false">
+						<div molecule="FormItem" col="id" text=''>
+							<input type="hidden" molecule="Input" id="idValue">
+						</div>
+						<div molecule="FormItem" col="name" text="岗位名称：">
+							<input type="text" molecule="Input" size="30">
+						</div>
+		
+						<div molecule="FormItem" col="node" text="所属单位：">
+		
+							<div molecule="DropDownTree" table="ns_sys_station,company"
+								value-col="id" display-col="name" autocomplete-col="name" select="single" paging="false"
+								show-header="false" data="node"
+								style="min-width: 300px;">
+								<m:th molecule="TreeNode" col="name" text="公司名称"></m:th>
+							</div>
+						</div>
+						
+						<div molecule="FormItem" col="status" text="状态：" dict="sys_station_status">
+							<select molecule="Select"></select>
+						</div>
+		
+						<div molecule="FormItem" col="visibility" text="可见性：" dict="sys_station_visibility">
+							<select molecule="Select"></select>
+						</div>
+						
+						<div molecule="FormItem" col="kind" text="岗位性质：" dict="sys_station_kind">
+							<select molecule="Select"></select>
+						</div>
+		
+						<div molecule="FormItem" col="remarks" text="备注：">
+							<textarea molecule="TextArea" collector="c|oc" rows="5" cols="50"></textarea>
+						</div>
+					</form>
+						<hr>
+					<form id='roleForm' onsubmit="return false" d2js.root="ns_sys_station,sys_station_role_dispatch">
+					
+						<button class="btn btn-default" id="addRole">增加角色绑定</button>&nbsp;&nbsp;
+						<div class="alert alert-info" role="alert" id="message" data="message" renderer='stderr' ></div>
+			      		<table class="table table-striped" id="role_table" >
+							<thead>
+								<tr>
+									<th></th><th>角色名称</th><th>应用公司</th><th>操作</th>
+				 				</tr>
+							</thead>
+							<tbody d2js.root="ns_sys_station,sys_station_role_dispatch" data="unremovedRows" renderer="repeater">
+								<tr repeater="true">
+									<td>
+										<input type='hidden' data='id' renderer="std" collector="c|s">
+									</td>
+									<td>
+										<div class="form-group form-inline" d2js.root = "ns_sys_station,sys_role" data="rows" renderer="options('name','id')">
+											<select class="form-control" data="..sys_role" renderer="std" collector="c|n|s"></select>
+										</div>
+									</td>
+									<td>
+										<div molecule-r="DropDownTree" table="ns_sys_station,company"
+											value-col="id" display-col="name" autocomplete-col="name" select="single" paging="false"
+											direction="up" show-header="false" data="bind_node" style="min-width: 300px;">
+											<m:th molecule-r="TreeNode" col="name" text="公司名称"></m:th>
+										</div>
+									</td>
+									<td>
+										<button class='btn btn-default'  name='delRoleBtn'>解除角色</button>
+									</td>
+								</tr>
+							</tbody>
+						 </table>
+						 
+					</form>
+				</div>
+			<script constructor>
+				var  $el = this.$el;
+				Dicts.sys_station_visibility = {"V":"可见","H":"不可见"};
+				Dicts.sys_station_is_root = {"Y":"是","N":"否"};
+				Dicts.sys_station_status = {"N":"正常","D":"禁用"};
+				Dicts.sys_station_kind = {"B":"正式岗位","T":"流动岗位","L":"临时岗位","G":"实习生"};
+				
+				var dataset = d2js.dataset.create("ns_sys_station");
+				var table = dataset.addTable('sys_station','../uac/sys_station.d2js');
+				table.on('load',function(error){
+					$el.render(dataset);
+				});
+				table.load('fetch');
+				table.on("submit",function(err){
+					if(!err){
+						company.reload();
+					}
+				});
+				
+				table.on('newrow', function(row){
+					row._set('id', -1)._set('visibility','H')._set('status','N')._set('is_root','N')._set('kind','L');
+				})
+				
+				var company = dataset.addTable('company', '../common/node.d2js');
+				company.on('load', function(error) {
+					$el.render(dataset);
+				});
+				company.load('listAll',{types : [%~ findAncientTypesAnd('SYS_STATION') %]});
+				
+				var sys_station_role_dispatch = dataset.addTable('sys_station_role_dispatch','../uac/sys_station_role_dispatch.d2js');
+				
+				sys_station_role_dispatch.on('load', function(error) {
+					$el.find("#ns_sys_station-dialog").render(dataset);
+				});
+				
+				//提交前执行
+				var sys_role = dataset.addTable('sys_role', '../uac/sys_station.d2js');
+				sys_role.on('load', function(error) {
+					$el.render(dataset);
+				});
+				sys_role.load('fetchAllRole');
+		   		dataset.addRelation('sys_station','id','sys_station_role_dispatch','sys_station');
+		   		
+				$el.on('tablelist.edit', function(e,row) {
+					sys_station_role_dispatch.message = null;
+	   				sys_station_role_dispatch.load({_m : 'fetchRoleByStation',"id" : row.id});
+		   		})   
+		   		
+		   		//解除角色绑定
+		   		$("#ns_sys_station-dialog").on('click',"button[name='delRoleBtn']",function(evt,ele){
+		   			
+		   			var row = $(this).findRoot().root;
+		   			row._remove();
+		   			sys_station_role_dispatch.submit({
+						callback : function(error) {
+							if (!error) {
+		  	                    	this.reload();
+		  	                    } else {
+		  	                    	$el.render(dataset);
+		  	                    }
+						}
+					});	
+		   		})
+		   		
+		   		$("#ns_sys_station-dialog").on('willsubmit', function(e, canceller){
+					canceller.cancel = (sys_station_role_dispatch.message != null);
+				})
+				
+		   		//角色下拉框校验
+		   		$("#ns_sys_station-dialog").on('change',"#role_table div select", validate)
+			   	$("#ns_sys_station-dialog").on('valuechange',"[molecule-r=DropDownTree]", function(event){
+			   		if(event.originalEvent instanceof MouseEvent) validate();
+			   	})
+			   	
+			   	function validate(){
+		   			$el.find("[molecule-obj = Dialog]").collect();
+		   			var valid = true;
+		   			var allRows = sys_station_role_dispatch.rows;
+		   			for(var i = 0; i < allRows.length; i++){
+		   				for(var j = i+1;j <allRows.length;j++){
+		   					if(allRows[j].sys_role == allRows[i].sys_role && allRows[j].bind_node == allRows[i].bind_node){
+			   					valid = false;		   					
+			   				}
+		   				}
+		   			} 
+		   			sys_station_role_dispatch.message = valid ? null : {level:'warning',message:'不能绑定相同的角色'};
+		   			$("#roleForm").render(dataset);
+				}
+		   		
+				this.dispose = function() {
+					d2js.dataset.release('ns_sys_station');
+				}
+				
+	   			//新增角色绑定
+		   		$el.on('click','#addRole', function(){
+		   			$el.find("[molecule-obj=Dialog]").collect();
+		   			var newRow = sys_station_role_dispatch.addRow();
+		   			newRow.sys_station = table.curr.id ? table.curr.id : -1;
+		   			newRow.bind_node = table.curr.node;
+		   			$el.render(dataset);
+		   		});
+				   		
+			</script>
+			
+		</div>
+	</template>
+
+	<div molecule="StationManage"></div>
+
+</body>
+</html>

@@ -1,0 +1,43 @@
+[% response.contentType="plain/text"; %][%
+    imports('./jssp-lib/codegen.js');
+
+ 	Object.prototype.keys = function(){
+		var arr = [];
+		for(var k in this){
+			if(this.hasOwnProperty(k)){
+				arr.push(k);
+			}
+		}
+		return arr;
+	};
+                                
+ 	var tb = JSON.parse(request.tableDef);
+	tb.allColumnCodes = (function(){
+		var arr = [];
+		for(var i=0; i< tb.columns.length; i++){
+			arr.push(tb.columns[i].code);
+		}
+		return arr;
+	})();
+	tb.allColumns = (function(){
+		var d = {};
+		for(var i=0; i< tb.columns.length; i++){
+			d[tb.columns[i].code] = tb.columns[i];
+		}
+		return d;
+	})();
+%]
+
+create table [%= tb.code %](
+		[%= tb.columns.map(function(col){
+			var arr = [col.code, col.type];
+			if(col.primary){ 
+				arr.push('primary key');
+			}else if(col.notNull){		
+				arr.push('not null');
+			}else if (col.defaultValue != null){
+				arr.push('default ' + col.defaultValue);
+			}
+			return col.code + '\t' + col.type + 
+		}).join(',\r\n\t') %]
+);

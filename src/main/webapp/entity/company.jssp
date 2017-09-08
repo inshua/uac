@@ -1,0 +1,198 @@
+[% if(request._la == 'true'){ return out.printJson([{name : '查询公司表',code : 'company.query', status : 'N'}, 
+{name : '增加公司表', code :'company.add', status : 'N', dependence : 'company.query'}, 
+{name :'编辑公司表', code : 'company.edit', status : 'N', dependence :'company.query'},
+{name : '删除公司表', code : 'company.delete', status :'N', dependence : 'company.query'}]); } 
+ 
+ var anonymous =request.anonymous;
+ if(session.user == null && !anonymous){ 
+ return response.sendRedirect(website + 'index.jssp'); 
+ } %]
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>公司设置</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+[% this.includeJssp('../common/include_lib.jssp'); %]
+
+</head>
+<body>
+	<template>
+		<div molecule-def='CompanyManage'>
+	
+			<div molecule="TableList" table="ns_company,company" edit-dialog="ns_company-dialog1">
+				<h1 class="page-title">公司信息</h1>
+				<div class="search-bar">
+					<form molecule="SearchForm" style="float:none;">
+						<div molecule="SearchFormItem" col="parent_id" text="上级公司：">
+							<div molecule="DropDownTree" table="ns_company,node" value-col="id" display-col="name" select="single" paging="false"
+								show-header="false" data="parent_id" data-width="200">
+								<tr>
+									<m:th molecule="TreeNode" col="name" text="公司名称"></m:th>
+								</tr>
+							</div>
+						</div>
+						
+						<div molecule="SearchFormItem" col="name" text="公司名称：">
+							<input type="text" molecule="Input">
+						</div>
+						
+						<button molecule="SearchButton" role="search">搜索</button>
+					</form>
+				</div>
+	            <div class="tool-bar">
+		            [% if(session.user.allowed['company.add']){%]
+		            <button molecule="AddButton" role="add">添加</button>
+		            [% } %]
+	            </div>
+				<div molecule="TableError"></div>
+	
+	            <div class="main-table">
+					<table id="grdMain" molecule="Tree" checkable="true" select="single"
+						paging='false'>
+						<thead>
+							<tr>
+								<th molecule="TreeNode" col="name" text="公司名称"></th>
+								<th molecule="Header" sortable="false" col="def,address" text="地址"></th>
+								<th molecule="Header" sortable="false" col="def,contactMan"
+									text="联系人"></th>
+								<th molecule="Header" sortable="false" col="def,tel" text="电话"></th>
+								[% if(session.user.allowed['company.edit']){ %]
+								<th data-t="id" renderer="editLink"></th> [% } %] [%
+								if(session.user.allowed['company.delete']){ %]
+								<th data-t="id" renderer="delLink"></th> [% } %]
+							</tr>
+						</thead>
+					</table>
+			        <div id="leftFoot"></div>
+		         </div>
+			</div>
+	
+	
+			<div molecule="Dialog" title="公司" id="ns_company-dialog1" >
+				<form class="table-form">
+	
+					<div molecule="FormItem" col="name" text="公司名称：">
+						<input type="text" molecule="Input" size="30">
+					</div>
+	
+					<div molecule="FormItem" col="parent_id" text="上级公司：">
+	
+						<div molecule="DropDownTree" table="ns_company,node_without_curr" value-col="id" display-col="name" select="single" paging="false"
+							show-header="false" data="parent_id" style="min-width: 300px;">
+							<tr>
+								<m:th molecule="TreeNode" col="name" text="公司名称"></m:th>
+							</tr>
+						</div>
+					</div>
+	
+					<div molecule="FormItem" col="def,address" text="公司地址：">
+						<input type="text" molecule="Input" collector="c|oc" size="45">
+					</div>
+	
+					<div molecule="FormItem" col="def,contactMan" text="公司联系人：">
+						<input type="text" molecule="Input" collector="c|oc" size="15">
+					</div>
+	
+					<div molecule="FormItem" col="def,tel" text="公司电话：">
+						<input type="text" molecule="Input" collector="c|oc" size=20>
+					</div>
+	
+					<div molecule="FormItem" col="def,remark" text="备注：">
+						<textarea molecule="TextArea" collector="c|oc" rows="5" cols="50"></textarea>
+					</div>
+				</form>
+			</div>
+	
+			<script constructor>
+				var $el = this.$el;
+				var dataset = d2js.dataset.create('ns_company');
+
+				var table = dataset.addTable('company', '../entity/company.d2js');
+				table.on('load', function(error) {
+					$el.render(dataset);
+				});
+				table.load('fetch');
+				
+				table.on("submit",function(err){
+					if(!err){
+						node.reload();
+					}
+				});
+				
+				var node = dataset.addTable('node', '../common/node.d2js');
+				node.on('load', function(error) {
+					$el.render(dataset);
+				});
+				node.load({_m:'listAll',"types":"COMPANY"});
+				
+				var table1 = dataset.addTable('node_without_curr','../entity/company.d2js');
+				$(function() {
+					$el.on('tablelist.edit', function() {
+						table1.fill(node.rows.filter(
+								function(row) {
+									return row.id != table.curr.id && !isBelongTo(row,table.curr);
+								}).map(function(row) {
+									return row._toJson()
+								}));
+						$el.find('#ns_company-dialog1').render(dataset);
+					});
+				});
+
+				function isBelongTo(fun, maybeParent) {
+					while (fun) {
+						if (fun.parent_id == maybeParent.id && maybeParent.id != null) {
+							return true;
+						}
+						if (fun.parent_id == 0)
+							break;
+						fun = table.find('id', fun.parent_id);
+					}
+				}
+
+				this.dispose = function() {
+					d2js.dataset.release('ns_company');
+				}
+				
+				d2js.Renderers.delLink = function(element, v) {
+					var table = d2js.findArg(arguments, 'table');
+					var e = $(element);
+					e.html('');
+					if (v != 0) {
+						var a = $(document.createElement('a')).appendTo(e);
+						a.html('删除');
+						a.attr('href', '###');
+	                    a.css('color', '#fc4f3f');
+						a.data('id', v);
+						var idColumn = arguments[arguments.length - 2];
+						a.on('click', function() {
+							var foot  = $el.find("#leftFoot");
+							var row = a.findRoot().root.row;
+							foot.html('<div molecule="Confirm">所选记录将被删除，该操作无法撤销，请点击[确定]按钮继续</div>');
+							setTimeout(function(){foot.html("")}, 2000);
+							foot.on("confirm.ok",function(){
+								row._remove();
+								table.submit({
+									callback : function(error) {
+										if (!error) {
+			       	                    	this.reload();
+			       	                    }else{
+			       	                    	$el.render();
+			       	                    }
+									}
+								});	
+								foot.html("");
+							}).on("confirm.cancel",function(){
+								foot.html("");
+							});
+												
+						});
+					}
+				};
+			</script>
+		</div>
+	</template>
+
+	<div molecule='CompanyManage'></div>
+</body>
+</html>

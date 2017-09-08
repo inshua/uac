@@ -1,0 +1,156 @@
+.main-content .btn[role] {
+    background-image: none;
+    filter: none;
+    border: 1px solid #D4D3D9;
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+    -webkit-box-shadow: none !important;
+    -moz-box-shadow: none !important;
+    box-shadow: none !important;
+    -webkit-border-radius: 0 !important;
+    -moz-border-radius: 0 !important;
+    border-radius: 3px !important;
+    font-family: "微软雅黑";
+    padding: 0px;
+    width: 114px;
+    height: 30px;
+    text-shadow: none;
+}
+.main-content .btn[role=search],.btn[role=add],.btn[role=save] {
+	color: #ffffff;
+    background-color: #2d94ff;
+    border-color: #2d94ff;
+}
+.main-content .btn[role=delete] {
+    color: #ffffff;
+    background-color: #fc4f3f;
+    border-color: #fc4f3f;
+}
+.main-content .btn-file {
+    width: 114px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid #D4D3D9;
+    background: #ffffff;
+    overflow: hidden;
+    position: relative;
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+    border-radius: 3px !important;
+    font-family: "微软雅黑";
+}
+.main-content .btn-file[role=explore] {
+    color: #ffffff;
+    background-color: #2d94ff;
+    border-color: #2d94ff;
+}
+.main-content .input-file {
+    font-size: 118px;
+    width: 90px;
+    height: 40px;
+    cursor: pointer;
+    position: absolute;
+    right: 0;
+    top: 0;
+    opacity: 0;
+    filter: alpha(opacity=0);
+}
+.main-content .dropdown-menu {
+    height: auto;
+    max-height: 300px;
+    overflow-x: hidden;
+}
+
+.main-content .modal-content {
+	border-radius: 0;
+}
+
+.main-content .table-form > .form-group > label {
+	color: #7a818b;
+    font-size: 14px;
+}
+
+.main-content .page-title {
+	line-height: 40px;
+    padding: 0px;
+    border-bottom: 1px solid #dddddd;
+    margin: 0 20px 15px 20px;
+    letter-spacing: -1px;
+    font-size: 14px;
+    color: #343941;
+    font-weight: 300;
+    font-family: 'Open Sans';
+}
+
+.main-content .search-bar {
+	margin: 0 20px 15px 20px;
+	border-bottom: 1px solid #e6e6eb;
+    text-align: left;
+    padding: 25px 20px 25px 0;
+}
+.main-content .search-bar form {
+	float: none;
+}
+.main-content .search-bar .form-group {
+	margin-right: 40px;
+}
+.main-content .search-bar label {
+	color: #7a818b;
+    font-size: 14px;
+}
+.main-content .search-bar .form-group .form-control {
+	height: 30px;
+}
+.main-content .search-bar .form-group .input-group > .input-group-btn > .btn {
+	height: 30px;
+}
+.main-content .search-bar > form > .btn {
+	width: 90px;
+}
+.main-content .form-row {
+	margin-bottom: 10px;
+}
+.main-content .form-row.btn-row {
+	text-align: right;
+}
+
+.main-content .tool-bar {
+	margin: 0 20px 15px;
+}
+.main-content .tool-bar .btn:first-child {
+    margin-left: 0;
+}
+.main-content .tool-bar .btn {
+	margin-left: 20px;
+}
+
+.main-content .main-table {
+	margin: 0 0 15px 20px;
+	padding: 0 20px 25px 0;
+}
+.main-content .main-table > table {
+	border: 1px solid #e6e6ed;
+}
+.main-content .main-table > table > thead {
+	background: #f2f2f4;
+    color: #343941;
+}
+.main-content .main-table > table > thead > tr {
+    height: 30px;
+}
+.main-content .main-table > table > thead > tr > th {
+    line-height: 30px;
+    border-bottom: none;
+}
+.main-content .main-table > table > tbody {
+	color: #7a818b;
+}
+.main-content .main-table > table > tbody a {
+    color: #2d94ff;
+}
+.main-content .main-table > table td,th {
+	white-space: nowrap;
+	border-bottom: 1px solid #dddddd;
+}

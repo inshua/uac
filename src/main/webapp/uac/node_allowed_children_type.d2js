@@ -1,0 +1,46 @@
+
+d2js.fetch = function(params){
+	sql{.
+		select t.parent_type,t.child_type,t.id from uac.node_allowed_children_type t where 1=1
+	.}
+	
+	if(params.parent_type != null) sql += ' and strpos(parent_type, upper(:parent_type)) > 0';
+
+	if(params.child_type != null) sql += ' and strpos(child_type, upper(:child_type)) > 0';
+	
+	sql = this.appendSort(sql, params._sorts);
+	
+	return this.query(sql, params, params._page);
+};
+
+
+d2js.validate = function(rcd, action){
+	$V(this,rcd, {parent_type : [V.longest(200),],  
+		child_type : [V.longest(200), V.notNull],  
+		parent_type : [V.longest(200), V.notNull],
+	});
+	
+	rcd.child_type = rcd.child_type.toUpperCase();
+	rcd.parent_type = rcd.parent_type.toUpperCase();
+}
+
+d2js.create = function(rcd){
+	 	 	
+	this.validate(rcd, 'add');
+	
+	rcd.id = this.nextId("uac.seq_nonentity");
+	this.actas('uac.node_allowed_children_type.add', 'uac.node_allowed_children_type', rcd.id, rcd);
+	this.insertRow('uac.node_allowed_children_type', rcd, ["parent_type","child_type","id"]);		
+};
+
+d2js.modify = function(rcd){
+	this.validate(rcd, 'edit');
+	
+	this.actas('uac.node_allowed_children_type.edit', 'uac.node_allowed_children_type', rcd.id, rcd);
+	this.updateRow('uac.uac.node_allowed_children_type', rcd, ["parent_type","child_type","id"]);
+};
+
+d2js.destroy = function(rcd){
+	this.actas('uac.node_allowed_children_type.delete', 'uac.node_allowed_children_type', rcd.id, rcd);
+	this.deleteRow('uac.node_allowed_children_type', rcd);
+};

@@ -1,0 +1,159 @@
+[% include('login.d2js'); %]
+
+[% // logger.info('request._m: '+request._m);
+ 	//取得客户端的cookie;
+	var UUIDCookies = request.getCookies();
+	var UUIDCookie;
+	if(UUIDCookies!=null&&UUIDCookies.length>0){
+		UUIDCookie = Array.prototype.slice(UUIDCookies).filter(function(item, idx) {
+			return item.name == "autologin_uuid";
+		})[0];
+	}
+	if(UUIDCookie&&request._m!='logout')
+		dbjs.login({UUIDCookie:UUIDCookie.value},'cookie'); 
+		
+%]
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>[%=loginTitle%]</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./login.css">
+    <script>
+    	if(typeof console == 'undefined') console = {log : function(){}};
+    </script>
+    
+    [% 
+     	var random = java.util.UUID.randomUUID().toString();
+    	random=random.replace(/-/g,'').substr(0,20);
+    	session.random=random;
+    %] 
+    <script src="jslib/sha1.js"></script>
+    <script src="jslib/jquery-1.10.2.js"></script>
+    <script src="jslib/json2.js"></script>
+    <script>
+        $(function () {
+            var fixHeight = function (e) {
+                $('#banner').height(document.documentElement.clientHeight);
+                $('#panel').height(document.documentElement.clientHeight);
+            }
+            fixHeight();
+            window.onresize = fixHeight;
+        });
+    </script>
+    <script>
+    var random = [%~ random %];
+    
+    function encrypt(pwd){
+    	var pwd2=CryptoJS.SHA1(pwd);
+    	
+    	
+    	var arrRandom = [];
+    	for(var i=0; i<random.length; i++)
+    		arrRandom.push(random.charCodeAt(i));
+
+    	var arrInt = [];
+    	for(var i=0; i<arrRandom.length;i+=4){
+    		var int = (arrRandom[i] << 24) | 
+						(arrRandom[i+1] << 16) |
+						(arrRandom[i+2] << 8) |
+						arrRandom[i+3];
+    		arrInt.push(int);
+    	}
+    	
+    	var concated = arrInt.concat(CryptoJS.SHA1(pwd2).words);
+
+    	var b = CryptoJS.SHA1({words : concated, sigBytes : 40});
+    	
+    	var arr=[];
+    	for(var i=0;i<5;i++){
+    		var r = pwd2.words[i] ^ b.words[i];
+    		arr.push(r);
+    	}
+    	return CryptoJS.lib.WordArray.create(arr).toString();
+    }
+    
+    function submitForm(input) {
+    	var username= document.getElementById('username').value;
+    	if(username==''){
+    		$('.message').text('提示：用户名不能为空，请检查！').show();
+    		return;
+    	}
+	    var txPassword=document.getElementById("pw").value.toUpperCase();
+	    if(txPassword==''){
+	    	$('.message').text('提示：密码不能为空，请检查！').show();
+	    	return;
+	    }
+	    
+	    [%
+	    	if(requireValidCode){
+	    		%]
+	    			var txValidCode = document.getElementById("txValidationCode").value;
+	    			if(txValidCode==''){
+	    				$('.message').text('提示：验证码不能为空，请检查！').show();
+	    				return;
+	    			}
+	    		[%
+	    	}
+	    %]
+	    var encryptPwd=encrypt(txPassword)
+		document.getElementById("txPassword").value =encryptPwd ;
+		$(input).parents('form:first')[0].submit();
+    }
+    </script>
+</head>
+<body>
+    <div class="banner" id="banner"></div>
+    <div class="panel" id="panel">
+        <div class="panel-body">
+            <div class="title">
+                <span class="main-title">[%= homeTitle %]</span>
+                <div class="split"></div>
+                <span class="sub-title">登录</span>
+            </div>
+            <form class="form" action="login.d2js?_m=login" method="post" onsubmit="return false">
+			    [%if(session.error){ %]
+			        <div class="message">提示：[%= session.error.message %]</div>
+			    [% session.error = null; } else { %]
+			    	<div class="message" style="display: none;"></div>
+			    [% } %]
+                <div class="input-group"><input id="username" type="text" name="u" class="input" placeholder="员工编号" /></div>
+                <div class="input-group">
+                    <input type="hidden" name="p" id="txPassword"/>
+                    <input id="pw" name="" type="password" class="input" placeholder="登录密码" />
+				</div>
+				[% imports('jssp_lib/checknum.js');  
+                    if(requireValidCode){
+                %]
+	                <div class="input-group" id="validationDiv">
+	                    <input id="txValidationCode" type="text" name="validation" class="small-input" placeholder="验证码">
+                        [%= this.callD2js("uac/validation.d2js","createCode") %]
+                    	<a href="javascript:;" class="change">看不清，换一张</a>
+	                </div>
+                [%}%]
+                <div class="input-group">
+                	<input type="hidden" name="autologin"/>
+                    <input class="btn btn-primary" type="submit" value="登录" onclick="submitForm(this)" />
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="jslib/jquery.placeholder.js"></script>
+    <script>
+        $('input').on('focus', function () {
+        	$('.message').hide();
+        }).placeholder();
+    </script>
+    
+    <script>
+    	$(function(){
+    		$("#validationDiv .change").click(function(){
+    			$.post("uac/validation.d2js?_m=generateSrc&date="+new Date()*1,function(info){
+    				$("#validationDiv img").attr('src', info);
+    			})
+    		})
+    	})
+    </script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+[% response.contentType="plain/text"; %][%
+    imports('./jssp-lib/codegen.js');
+	
+ 	Object.prototype.keys = function(){
+		var arr = [];
+		for(var k in this){
+			if(this.hasOwnProperty(k)){
+				arr.push(k);
+			}
+		}
+		return arr;
+	};
+                                
+ 	var tb = JSON.parse(request.tableDef);
+	tb.allColumnCodes = (function(){
+		var arr = [];
+		for(var i=0; i< tb.columns.length; i++){
+			arr.push(tb.columns[i].code);
+		}
+		return arr;
+	})();
+	tb.allColumns = (function(){
+		var d = {};
+		for(var i=0; i< tb.columns.length; i++){
+			d[tb.columns[i].code] = tb.columns[i];
+		}
+		return d;
+	})();
+	tb.nodeColumn = tb.columns[tb.columns.find(function(col){return col.parentTable == 'node';})];
+	tb.pkColumn = tb.columns[tb.columns.find(function(col){return col.primary;})];
+	
+%]
+d2js.fetch = function(params){
+[%	cond(tb.nodeColumn, function(){ %]	
+	var sql = this.nodeSql(params[% var col = tb.nodeColumn; cond(col, function(){%],findAncientTypesAnd([%~ tb.code.toUpperCase() %])[% }); %]) +
+			'select [%= tb.columns.map(function(col){return 't.' + col.code}).join(",") %], nd.name node_name from [%= tb.code %] t, nd where t.[%= tb.nodeColumn.code %] = nd.id';
+[%  }, true, function(){ %]
+	sql{.
+	   select [%= tb.columns.map(function(col){return 't.' + col.code}).join(",") %] 
+	     from [%= tb.code %] t
+	    where 1 = 1
+	.}
+
+	sql += ' where 1=1 ';
+[%  }); %]
+[% tb.columns.filter(function(itm){return itm.searchUiIndex && itm != tb.nodeColumn;})
+ 				.sort(function(itm){return itm.searchUiIndex;}).forEach(function(col){
+	cond(dbTypeToExtFiledType(col.type) == 'string', function(){%]
+	if(params.[%= col.code %] != null) sql += ' and instr([%= col.code %], :[%= col.code %]) > 0';
+	[%}, function(){%]
+	if(params.[%= col.code %] != null) sql += ' and [%= col.code %] = :[%= col.code %]';
+[%	});		
+ });%]
+
+	sql = this.appendSort(sql, params._sorts);
+	
+	return this.query(sql, params, params._page);
+};
+[%	function validations(){ %] 	 	
+	$V(rcd, {[% tb.columns.forEach(function(col){ 
+		%][%= col.code %] : [[%= col.notNull ? 'V.notNull,' : '' %][%= col.length ? 'V.longest(' + col.length + '),' : '' %][%= col.listOfValues ? 'V.inside([' + col.listOfValues.keys().map(function(k){return '"' + k + '"';}).join(',') + ']),' : '' %][%= col.unique ? 'V.unique(\'' + tb.code + '\'),' : '' %][%= col.uniqueInNode ? 'V.uniqueInNode(\'' + tb.code + '\'),' : '' %]],  
+		[% }); %]
+	});
+[%	} %]
+
+d2js.create = function(rcd){
+	[% validations(); %]
+	
+	rcd.[%=tb.pkColumn.code%] = this.nextId([%~ tb.pkColumn.sequence || 'SEQ_ENTITY' %]);
+	actas('[%= tb.code %].add', '[%= tb.code %]', rcd.[%=tb.pkColumn.code%], rcd);
+	this.insertRow('[%= tb.code %]', rcd, [%~ tb.columns.map(function(col){return col.code;}) %]);};
+
+d2js.modify = function(rcd){
+	[% validations(); %]
+	
+	actas('[%= tb.code %].edit', '[%= tb.code %]', rcd.[%=tb.pkColumn.code%], rcd);
+	this.updateRow('[%= tb.code %]', rcd, [%~ tb.columns.map(function(col){return col.code;}) %]);};
+
+d2js.destroy = function(rcd){
+	actas('[%= tb.code %].delete', '[%= tb.code %]', rcd.[%=tb.pkColumn.code%], rcd);
+	this.deleteRow('[%= tb.code %]', rcd);};

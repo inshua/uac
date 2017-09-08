@@ -1,0 +1,105 @@
+[% if(request._la == 'true'){ return out.printJson([{name : '查询登录日志表',code : 'uac.login_log.query', status : 'N'}]); } 
+ 
+ var anonymous =request.anonymous;
+ if(session.user == null && !anonymous){ 
+ return response.sendRedirect(website + 'index.jssp'); 
+ } %]
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>登录日志</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+[% this.includeJssp('../common/include_lib.jssp'); %]
+
+</head>
+<body>
+	<template>
+		<div molecule-def='LoginLog' class="AFD">
+	
+			<div molecule="TableList" table="ns_login_log,login_log">
+				<h1 class="page-title">登录日志信息</h1>
+				<div class="search-bar">
+					<form molecule="SearchForm" style="float: none;">
+						<div class="form-row">
+	    					<div molecule="SearchFormItem" col="name" text="登录人员：">
+	    						<input type="text" molecule="Input">
+	    					</div>
+	    					
+	    					<div molecule="SearchFormItem" col="start_time" text="起始时间：">
+	    						<input type="date" molecule="Input" collector="prop('valueAsDate')|s" renderer="prop('valueAsDate')" id="startTime">
+	    					</div>
+	    					<div molecule="SearchFormItem" col="end_time" text="结束时间：">
+	    						<input type="date" molecule="Input" collector="prop('valueAsDate')|s" renderer="prop('valueAsDate')">
+	    					</div>
+						</div>
+						<div class="form-row">
+	                        <div molecule="SearchFormSelectItem" col="result" text="登录结果：" dict="login_log_result"></div>
+						   <div molecule="SearchFormSelectItem" col="login_mode" text="登录来源：" dict="login_log_mode"></div>
+						</div>
+						<div class="form-row btn-row">
+						   <button molecule="SearchButton" role="search">搜索</button>
+						</div>
+					</form>
+				</div>
+				
+				<div molecule="TableError"></div>
+	            <div class="main-table">
+	    			<table id="grdMain" molecule="List" checkable="true" select="single" >
+	    				<thead>
+	    					<tr>
+	    						<th molecule="Header" sortable="false" col="p_name" text="登录人员"></th>
+	    						<th molecule="Header" sortable="false" col="login_d" text="登录时间" format="yyyy-MM-dd HH:mm" renderer="date|std"></th>
+	    						<th molecule="Header" sortable="false" col="action" text="动作" dict="login_log_action" renderer="dict|std"></th>
+	    						<th molecule="Header" sortable="false" col="description" text="动作描述"></th>
+	    						<th molecule="Header" sortable="false" col="result" text="登录结果" dict="login_log_result" renderer="dict|std"></th>
+	    						<th molecule="Header" sortable="false" col="result_desc" text="结果说明" ></th>
+	    						<th molecule="Header" sortable="false" col="login_mode" text="登录来源" dict="login_log_mode" renderer="dict|std"></th>
+	    <!-- 						<th molecule="Header" sortable="false" col="device_id" text="登录设备" ></th> -->
+	    						
+	    					</tr>
+	    				</thead> 
+	    			</table>
+				</div>
+			</div>
+
+			<script constructor>
+				var $el = this.$el;
+				Dicts.login_log_result = {"S":"成功","F":"失败","E":"失败次数过多"};
+				Dicts.login_log_action = {"L":"登录","O":"切换机构组织"};
+				Dicts.login_log_mode = {"B":"网页登录","S":"单点登录","M":"移动设备登录"};
+				var dataset = d2js.dataset.create('ns_login_log');
+				var table = dataset.addTable('login_log', '../uac/login_log.d2js');
+				table.on('load', function(error) {
+					$("#startTime").val(getDefaultDate());
+					$el.render(dataset);
+				});
+				table.load('fetch');
+				
+				table.on("submit",function(err){
+					if(!err){
+						node.reload();
+					}
+				});
+				
+				d2js.Renderers.msToDate = function(ele,v){
+					return new Date(v);
+				}
+
+				this.dispose = function() {
+					d2js.dataset.release('ns_login_log');
+				}
+				
+				function getDefaultDate(){
+					var date = new Date();
+					var mon = date.getMonth() + 1;
+					var day = date.getDate()-1;
+					return date.getFullYear() + "-" + (mon<10?"0"+mon:mon) + "-" +(day<10?"0"+day:day);
+				}
+			</script>
+		</div>
+	</template>
+
+	<div molecule='LoginLog'></div>
+</body>
+</html>

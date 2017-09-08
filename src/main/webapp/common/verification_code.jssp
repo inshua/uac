@@ -1,0 +1,4 @@
+[%
+ 	imports('jssp-lib/checknum.js');
+	var obj = ValidationCode.generateImageDataUri(request.width, request.height);
+%][%~ obj %]

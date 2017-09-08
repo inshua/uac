@@ -1,0 +1,104 @@
+[% if(request._la == 'true'){ return out.printJson([{name : '查询日志管理表',code : 'uac.operation_log.query', status : 'N'}]); } 
+ 
+ var anonymous =request.anonymous;
+ if(session.user == null && !anonymous){ 
+ return response.sendRedirect(website + 'index.jssp'); 
+ } %]
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>操作日志</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+[% this.includeJssp('../common/include_lib.jssp'); %]
+<script>
+	
+
+</script>
+</head>
+<body>
+	<template>
+		<div molecule-def='OperationLog' class="AFD">
+	
+			<div molecule="TableList" table="ns_operate_log,operate_log">
+				<h1 class="page-title">操作日志信息</h1>
+				<div class="search-bar">
+					<form molecule="SearchForm" style="float: none;">
+						<div class="form-row">
+	    					<div molecule="SearchFormItem" col="person" text="操作人员：">
+	    						<input type="text" molecule="Input">
+	    					</div>
+	    					<div molecule="SearchFormSelectItem" col="apply_table" text="模块：" dict="operate_log_apply_table"></div>
+	                        <div molecule="SearchFormSelectItem" col="result" text="操作结果：" dict="operate_log_result"></div>
+	    				</div>
+	    				<div class="form-row">
+	                        <div molecule="SearchFormItem" col="start_time" text="起始时间：">
+	                            <input type="date" molecule="Input" collector="prop('valueAsNumber')|s" renderer="prop('valueAsNumber')" id="start">
+	                        </div>
+	                        <div molecule="SearchFormItem" col="end_time" text="结束时间：">
+	                            <input type="date" molecule="Input" collector="prop('valueAsNumber')|s" renderer="prop('valueAsNumber')">
+	                        </div>
+	    				</div>
+						<div class="form-row btn-row">
+						   <button molecule="SearchButton" role="search">搜索</button>
+						</div>
+					</form>
+				</div>
+				
+				<div molecule="TableError"></div>
+	            <div class="main-table">
+	    			<table id="grdMain" molecule="List" checkable="true" select="single" >
+	    				<thead>
+	    					<tr>
+	    						<th molecule="Header" sortable="false" col="person_name" text="操作人员"></th>
+	    						<th molecule="Header" sortable="false" col="start_time" text="操作时间" format="yyyy-MM-dd HH:mm" renderer="msToDate|date|std"></th>
+	    						<th molecule="Header" sortable="false" col="apply_table" text="操作模块" dict="operate_log_apply_table" renderer="dict|std"></th>
+	    						<th molecule="Header" sortable="false" col="function_code_name" text="具体功能"></th>
+	    						<th molecule="Header" sortable="false" col="result" text="操作结果" dict="operate_log_result" renderer="dict|std"></th>
+	    					</tr>
+	    				</thead> 
+	    			</table>
+				</div>
+			</div>
+	
+			<script constructor>
+				var $el = this.$el;
+				Dicts.operate_log_apply_table = {"SYS_FUNCTION":"系统功能管理","SYS_STATION":"岗位管理","SYS_ROLE":"角色管理","NODE":"组织机构管理","PERSON":"员工管理"}
+				Dicts.operate_log_result = {"S":"成功","F":"失败","E":"操作错误","A":"程序错误"};
+				var dataset = d2js.dataset.create('ns_operate_log');
+				var table = dataset.addTable('operate_log', '../uac/operation_log.d2js');
+				table.on('load', function(error) {
+					$("#start").val(getDefaultDate());
+					$el.render(dataset);
+				});
+				table.load('fetch');
+				
+				table.on("submit",function(err){
+					if(!err){
+						node.reload();
+					}
+				});
+				
+				d2js.Renderers.msToDate = function(ele,v){
+					return new Date(v);
+				}
+
+				this.dispose = function() {
+					d2js.dataset.release('ns_operate_log');
+				}
+				
+				function getDefaultDate(){
+					var date = new Date();
+					var mon = date.getMonth() + 1;
+					var day = date.getDate()-1;
+					return date.getFullYear() + "-" + (mon<10?"0"+mon:mon) + "-" +(day<10?"0"+day:day);
+				}
+					
+			</script>
+	
+		</div>
+	</template>
+
+	<div molecule='OperationLog'></div>
+</body>
+</html>

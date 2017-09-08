@@ -1,0 +1,96 @@
+
+d2js.fetch = function(params){
+	var sql = this.nodeSql(params, findChildTypes('SYS_USER')) +
+			'select t.id,t.username,t.password,t.node,t.email,t.mobile,t.status,t.remarks, t.login_type, t.person, t.name, t.global_account, nd.name node_name \
+				from vw_sys_user_person t, nd where t.node = nd.id and not exists \
+					(select 1 from user_role_dispatch ur, sys_role r where ur.sys_user=t.id and r.id = ur.sys_role and r.role_level < :role_level)';
+	
+		
+	if(params.username != null) sql += ' and instr(username, :username) > 0';
+
+	if(params.status != null) sql += ' and instr(status, :status) > 0';
+	
+	params.role_level = this.session.user.role.role_level;
+	
+	sql = this.appendSort(sql, params._sorts);
+	
+	return this.query(sql, params, params._page);
+};
+
+
+d2js.create = function(rcd){	
+	$V(this,rcd, {id : [],  
+		username : [V.longest(40), V.unique('sys_user', null, null, true)],  
+		password : [V.longest(40)],  
+		node : [],  
+		status : [V.longest(1),V.inside(["N","D"])],  
+		remarks : [V.longest(4000)]  
+	});
+
+
+	this.doTransaction(function(){
+		rcd.id = this.nextId("SEQ_ENTITY");
+		this.actas('sys_user.add', 'sys_user', rcd.id, rcd);
+		this.insertRow('sys_user', rcd, ["id","username","password","node","status","remarks","email","mobile","login_type","person"]);
+		this.updateDispatchedRoles(rcd);
+	});		
+};
+
+d2js.updateDispatchedRoles = function(rcd){
+	var roles = rcd.roles || [];
+
+	if(roles.length){
+	    
+	    if(this.executor.isOracle()){
+	    	var sqlMerge = 
+		    	"insert into user_role_dispatch(id, sys_user, sys_role) select seq_nonentity.nextval, :id, :role from dual where not exists (select 1 from user_role_dispatch where sys_user=:id and sys_role = :role)";
+	    } else if(this.executor.isPostgreSQL()){
+	    	var sqlMerge = 
+		    	"insert into user_role_dispatch(id, sys_user, sys_role) select nextval('seq_nonentity'), :id, :role  where not exists (select 1 from user_role_dispatch where sys_user=:id and sys_role = :role)";
+	    }
+	
+	    var arr = [];
+	    for(var i=0; i< roles.length; i++) arr.push('?');
+	    var sqlClean = 'delete from user_role_dispatch where sys_user = ? and sys_role not in ('+ arr.join(',') +')'; 
+	    
+    	var me = this;
+    	roles.forEach(function(role){
+    		var a = {role : role, id : rcd.id};
+    		me.execute(sqlMerge, a);        		
+    	});
+    	this.execute(sqlClean, [rcd.id].concat(roles));
+	} else {
+		var sqlClean = 'delete from user_role_dispatch where sys_user = ?';
+		this.execute(sqlClean, [rcd.id]);
+	}
+};
+
+d2js.fetchRoles = function(params){
+	var sql = 'select sys_role from user_role_dispatch where sys_user = :user';
+	return this.query(sql, params);
+};
+
+d2js.modify = function(rcd){
+	$V(this,rcd, {id : [],  
+		username : [V.longest(40), V.unique('sys_user', null, null, true)],  
+		password : [V.longest(40)],  
+		node : [],  
+		status : [V.longest(1),V.inside(["N","D"])],  
+		remarks : [V.longest(4000)]  
+		
+	});
+	
+	this.actas('sys_user.edit', 'sys_user', rcd.id, rcd);
+	
+	this.doTransaction(function(){
+		logger.info("rcd.password: "+rcd.password);
+		this.updateRow('sys_user', rcd, ["id","username","password","node","status","remarks","email","mobile","login_type","person"]);
+		this.updateDispatchedRoles(rcd);
+	});
+};
+
+d2js.destroy = function(rcd){
+	this.actas('sys_user.delete', 'sys_user', rcd.id, rcd);
+	
+	this.deleteRow('sys_user', rcd);
+};

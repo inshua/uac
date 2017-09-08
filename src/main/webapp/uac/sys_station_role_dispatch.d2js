@@ -1,0 +1,46 @@
+d2js.create = function (rcd){
+	$V(this,rcd, {
+		'sys_station':[V.notNull],
+		'sys_role':[V.notNull,V.atLeast(1)],
+		'bind_node':[V.notNull],
+	});
+	
+	rcd.id = this.nextId("sys_station_role_dispatch_id_seq");	 
+	
+	if(rcd.sys_station == -1) {
+		rcd.sys_station = this.session.sys_station_id;
+	}     
+	
+	return this.insertRow('sys_station_role_dispatch', rcd, ["id","sys_station","sys_role","bind_node"]);
+}
+
+d2js.modify = function (rcd){
+	$V(this,rcd, {
+		'sys_station':[V.notNull],
+		'sys_role':[V.notNull],
+		'bind_node':[V.notNull],
+	});
+	return this.updateRow('sys_station_role_dispatch', rcd, ["id","sys_station","sys_role","bind_node"]);
+}
+
+
+d2js.exports.fetchRoleByStation = true;
+d2js.fetchRoleByStation = function(params){
+
+	sql{.
+		select * from sys_station_role_dispatch  where 1 = 1
+	.}
+	if(params.id){
+		sql += ' and sys_station = :id';
+	}else{
+		return;
+	}
+	
+	return this.query(sql,params);
+	
+}
+
+d2js.destroy = function(rcd){
+	
+	return this.deleteRow('sys_station_role_dispatch',rcd);
+}

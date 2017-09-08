@@ -1,0 +1,44 @@
+d2js.exports.createCode = true;
+d2js.createCode = function(width,height){
+		return '<img src="' + this.generateSrc() + '"  alt="" class="chaptcha">';
+	}
+
+d2js.exports.generateSrc = true;
+d2js.generateSrc = function(){
+	var imports = new JavaImporter(com.google.code.kaptcha,java.util,java.io,java.awt.image.BufferedImage,javax.imageio.ImageIO);
+	with(imports){
+		var pros = new java.util.Properties();
+		pros.setProperty("kaptcha.border","no");
+		pros.setProperty("kaptcha.border.color","105,179,90");
+		pros.setProperty("kaptcha.textproducer.font.color","red");
+		pros.setProperty("kaptcha.textproducer.char.string","123456789");
+		pros.setProperty("kaptcha.image.width","90");
+		pros.setProperty("kaptcha.image.height","36");
+		pros.setProperty("kaptcha.textproducer.font.size","30");
+		pros.setProperty("kaptcha.textproducer.char.length","4");
+		pros.setProperty("kaptcha.session.key","code");
+		pros.setProperty("kaptcha.noise.impl","com.google.code.kaptcha.impl.NoNoise");
+		var config = new com.google.code.kaptcha.util.Config(pros);
+		var kapt = new com.google.code.kaptcha.impl.DefaultKaptcha();
+		kapt.setConfig(config);
+		var capText = kapt.createText();
+		
+		this.session.validation = capText;
+		
+		var bufferedImg = kapt.createImage(capText);
+		
+		var byteOut = new java.io.ByteArrayOutputStream();
+		
+		javax.imageio.ImageIO.write(bufferedImg,"jpg",byteOut);
+		
+		var encodeType = Java.type("sun.misc.BASE64Encoder");
+		
+		var base64Encode = new encodeType;
+		
+		var str = base64Encode.encode(byteOut.toByteArray());
+		
+		return "data:image/png;base64,"+ str;
+	}
+	
+	
+}

@@ -1,0 +1,95 @@
+[% 	if(request._la == 'true'){
+		return out.printJson([{name : '强制下线', code : 'offOnline.query', status : 'N'}]);
+ 	}
+	var anonymous = request.anonymous;
+	if(session.user == null && !anonymous){
+		return response.sendRedirect(website + 'index.jssp');
+	}
+%]<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>在线人员管理</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	[% this.includeJssp('../common/include_lib.jssp'); %]
+</head>
+<body style='background-color:white'>
+	
+	<div molecule-def='OnlineManage'>
+
+	[%
+		function isValidate (emId){
+		try{
+			return application['employee_' + emId].creationTime;
+		}catch(e){
+			return false;
+		}
+	}
+	%]
+	[%
+	 function format(fmt) { //author: meizz 
+    	var o = {
+        "M+": this.getMonth() + 1, 
+        "d+": this.getDate(),  
+        "h+": this.getHours(), 
+        "m+": this.getMinutes(), 
+        "s+": this.getSeconds(),  
+        "q+": Math.floor((this.getMonth() + 3) / 3), 
+        "S": this.getMilliseconds() 
+    	};
+    	if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+    	for (var k in o)
+    	if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+    	return fmt;
+	}
+	%]
+	
+	[%
+		var count = 0;
+		for(var obj in application){
+			if(obj.indexOf('employee_') != -1 && isValidate(obj.substr(9))){
+				count++;
+			}
+		}	
+	%]
+	
+	
+	当前在线：[%= count%]
+	<table class="table table-stript">
+		<thead>
+			<tr><td>员工编号</td><td>姓名</td><td>所属部门或科室</td><td>登录时间</td><td>操作</td></tr>
+		</thead>
+		<tbody>
+			[%for(var obj in application){ %]
+			[%	if(obj.indexOf('employee_') != -1 && isValidate(obj.substr(9))){ %]
+					<tr>
+						<td>[%= application[obj].userJava.person.employee_no%]</td><td>[%= application[obj].userJava.person.name%]</td>
+						<td>[%= application[obj].userJava.node.name%]</td><td>[%= application[obj].userJava.login.login_d%]</td><td><a data-em = "[%= application[obj].userJava.person.employee%]" href = "">强制下线</a></td>
+					</tr>
+				[%}%]
+			[%}%]
+		</tbody>
+	</table>
+	
+	<script>
+		// MOLECULE-DEF
+		function OnlineManage() {
+			$el = this.$el;
+			
+			$el.on('click','a',function(){
+				var em = $(this).data('em');
+				$.post('/start/login.d2js?_m=logout','em='+em,function(info){
+					location.reload(true);
+				})
+			})
+		}
+		
+		// MOLECULE-DEF-END
+		Molecule.create(OnlineManage);
+	</script>
+
+</div>
+
+<div molecule="OnlineManage"></div>
+</body>
+</html>

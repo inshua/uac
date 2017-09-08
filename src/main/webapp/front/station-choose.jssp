@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>登录岗位选择</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../css/common/choose.css"/>
+[% this.includeJssp('../common/include_lib.jssp'); %]
+[%	
+			var me = this;
+			if(request.choose){
+				var chooseObj = session.stationChooses[request.choose];
+				session.currRoleIdx = request.choose;
+				var functions = chooseObj.roles.reduce(function(result, ch){					
+					me.callD2js("../login.d2js","loadFunctions",[ch.id]).forEach(function(disp){
+						var exist = result.find(function(a){
+							return disp.id == a.id;
+						});
+						if(exist == null){
+							result.push(disp);
+						}else{
+							var mode = ["D","I","O","T"];
+							if(mode.indexOf(exist.dispatch_mode) < mode.indexOf(disp.dispatch_mode)){
+								result.splice(result.indexOf(exist),1,disp);
+							}
+						}
+					})
+					return result;
+				}, []);
+				logger.info("FUNCTIONS:" +JSON.stringify(functions))
+				var subFunctions = chooseObj.roles.reduce(function(result, ch){					
+					me.callD2js("../login.d2js","loadSubFunctions",[ch.id]).forEach(function(disp){
+						var exist = result.find(function(a){
+							return disp.id == a.id;
+						});
+						if(exist == null){
+							result.push(disp);
+						}else{
+							var mode = ["D","O","T"];
+							if(mode.indexOf(exist.dispatch_mode) < mode.indexOf(disp.dispatch_mode)){
+								result.splice(result.indexOf(exist),1,disp);
+							}
+						}
+					})
+					return result;
+				}, []);
+				logger.info("SUBFUNCTIONS:" +JSON.stringify(subFunctions))
+				var allowedFunctions = this.callD2js("../login.d2js","createAllowFunctionMask",[functions,subFunctions]);
+				
+				session.user.functions = functions;
+				session.user.allowed = allowedFunctions;
+				session.user.node = this.callD2js("../common/node.d2js","fetchById",{id : chooseObj.node_id}).rows[0];
+				session.user.stations = chooseObj.roles.map(function(a){return a.station_id}).join();
+				session.user.roles = chooseObj.roles;
+				session.user.role = chooseObj.roles[0];
+				//session.user.company = ;
+					
+				session.user.login.result_desc = session.user.username+'登录系统';
+				var log = this.callD2js('../uac/login_log.d2js','create');
+				session.user.login.result = log.result;
+				session.userJava = session.user.toJava();
+				
+				var emId = (session.user.person.employee) ? session.user.person.employee : -1;
+				var currOnline = this.callD2js("../uac/online_user.d2js","mergeUser",[emId]);
+				session.online = currOnline;
+				session.onlineJava = session.online.toJava();
+				
+				var cookies = request.getCookies();
+				var cookie = Array.prototype.slice.apply(cookies).filter(function(item,index){
+				logger.info(item.name +"::::" + item.value + "::::" + item.maxAge);
+				return item.name == "JSESSIONID";
+				})[0];
+				var newCookie = new javax.servlet.http.Cookie("test", cookie.value);
+				newCookie.setMaxAge(10*365*24*60*60);
+				newCookie.setPath(request.contextPath + "/");
+				newCookie.setHttpOnly(true);
+				response.addCookie(newCookie);
+				//session.user = session.userJava;[在孟祥翔环境上需要去掉注释]
+				response.sendRedirect("../views/main.jsp");
+			}else{
+				var em = (session.user.id != 0)?session.user.person.employee:-1;
+				logger.info('create online user : ' + em);
+				application['employee_' + em] = session;
+				if(session.user.id == 0){
+					session.user.node = this.callD2js("../common/node.d2js","fetchById",{id : 0}).rows[0];
+					session.user.login.result_desc = session.user.username+'登录系统';
+					var log = this.callD2js('../uac/login_log.d2js','create');
+					session.user.login.result = log.result;
+					
+					var cookies = request.getCookies();
+					var cookie = Array.prototype.slice.apply(cookies).filter(function(item,index){
+						return item.name == "JSESSIONID";
+					})[0];
+					var newCookie = new javax.servlet.http.Cookie("test", cookie.value);
+					newCookie.setMaxAge(10*365*24*60*60);
+					newCookie.setPath(request.contextPath + "/");
+					newCookie.setHttpOnly(true);
+					response.addCookie(newCookie);
+					response.sendRedirect("../front/main.jssp");
+					return;
+				}
+				var roles = session.roles;
+				
+				var stationChooses  = roles.reduce(function(arr,role){
+					var exist = arr.find(function(a){
+							return a.node_id == role.node_id;
+						});
+					if(exist == null){
+						arr.push({"node_id":role.node_id,"roles":[role]});
+					}else{
+						exist.roles.push(role);
+					}
+					return arr;
+				},[]);
+				session.stationChooses = stationChooses;
+				session.stationChoosesJava = stationChooses.toJava();
+				//若登录用户只拥有一种组织机构，则跳过选择页面
+				if(stationChooses.length == 1){
+					response.sendRedirect("station-choose.jssp?choose=0");
+				}
+			}
+%]
+
+</head>
+<body>			
+	<div class="choose-list">
+	   <div class="title">请选择您要登录的岗位</div>
+	   <ul>
+	       [% session.stationChooses.forEach(function(choose,idx){ %]
+	       <li>
+	           <a href="?choose=[%= idx%]">
+	               <span class="station">[%= choose.roles[0].node_name %]</span>
+	               <span class="station">[%= choose.roles.map(function(a){return a.station_name}).join() %]</span>
+	               <br/>
+	               <span>[%= choose.roles.map(function(a){return a.name}).join() %]</span>
+	               <div class="choose-go">
+	                   <i class="icon-chevron-right"></i>
+	               </div>
+	           </a>
+	       </li>
+	       [% }); %]
+	    </ul>
+	</div>
+	<script>
+		
+	
+	
+	</script>
+	
+	
+</body>
+</html>

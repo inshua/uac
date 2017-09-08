@@ -1,0 +1,1 @@
+[% response.contentType="plain/text"; %][%= request.tableDef %]

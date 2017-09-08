@@ -1,0 +1,92 @@
+/*
+ * 可以提供 cut 剪枝及类型 types 剪枝
+ */
+d2js.exports.listAll = 
+d2js.listAll = function(params){
+	
+	var sql = this.nodeSql(params, params.types) + ' select * from nd';	
+	return this.query(sql, params);
+	
+//	var sql = 'select id, name, parent_id, type, level lv from node ';
+//
+//	sql += ' connect by parent_id = prior id ' ;
+//	
+//	logger.info("query params " + JSON.stringify(params));
+//	if(params.q){
+//		if(params.q.cut){
+//			sql += ' and id <> :cut' ;
+//		}
+//		if(params.q.types){
+//			var types = params.q.types; 
+//			if(types.push){		// whether is array
+//				// types.push('ROOT');
+//			} else {
+//				types = ['ROOT', types];	// if string
+//			}
+//			sql += ' and type in (' + types.map(function(t){return "'" + t.toUpperCase() + "'";}).join(',') + ') ';
+//		}		
+//	}	
+//	
+//	if(!params.q) params.q = {};
+//	//if(!params.q.id) params.q.id = 0;
+//	if(params.q.id == null) params.q.id = this.session.user.node;	
+//
+//	sql += ' start with id = :id order siblings by name'; 
+//	
+//	return this.query(sql, params, params._page);
+};
+
+/*
+ * 用在组织节点的增加中，作为事务的函数调用，用法如：
+ * company.d2js
+ * 		d2js.create = function(rcd){
+ * 			this.doTransaction(function(){
+ * 				var id = this.createNode(rcd);	
+ * 				rcd.id = id;
+ * 				this.execute('insert into company...',rcd);  
+ * 			})
+ * 		}
+ */ 
+d2js.createNode = d2js.insertNode = function(rcd, type){
+	$V(this,rcd, {
+		name : [V.longest(200)],  
+		type : [V.longest(50)]  
+	});
+
+	var id = this.nextId("SEQ_ENTITY");
+	var sql = 
+		"insert into node\n" +
+		"  (id, parent_id, name, type)\n" + 
+		"values\n" + 
+		"  (:id, :parent_id, :name, :type)";
+	
+	this.execute(sql, {id : id, name : rcd.name, type : type.toUpperCase(), parent_id : rcd.parent_id});
+	return id;	
+};
+
+/*
+ * 同样放在事务中。
+ */
+d2js.updateNode = function(rcd){
+	$V(this,rcd, {
+		name : [V.longest(200)],  
+		type : [V.longest(50)]  
+	});
+	this.updateRow('node', rcd, ["id","parent_id","name"]);	
+};
+
+/**
+ * 可放于事务中。如为外键已设置 cascade delete 也可单独调用。
+ */
+d2js.deleteNode = function(rcd){
+	this.deleteRow('node', rcd);
+};
+
+d2js.fetchById = function(params){
+	sql{.
+		select * from node where id = :id
+	.}
+	
+	return this.query(sql,params);
+
+}

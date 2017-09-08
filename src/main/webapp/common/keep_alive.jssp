@@ -1,0 +1,3 @@
+<script>
+	setInterval(function(){$.get([%~ website %] + '/common/keep_alive.html?t=' + new Date() * 1)}, 60000);
+</script>

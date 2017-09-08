@@ -1,0 +1,65 @@
+/**
+ * 可以提供 cut 剪枝及类型 types 剪枝
+ * @param params {types : [node types]}
+ */
+d2js.exports.listAll = true;
+d2js.listAll = function(params, body, pageDef){
+	var sql = this.nodeSql(params, params.types) + ' select * from nd';
+	return this.query(sql, params);
+};
+
+/*
+ * 用在组织节点的增加中，作为事务的函数调用，用法如：
+ * company.d2js
+ * 		d2js.create = function(rcd){
+ * 			this.doTransaction(function(){
+ * 				var id = this.createNode(rcd);	
+ * 				rcd.id = id;
+ * 				this.execute('insert into company...',rcd);  
+ * 			})
+ * 		}
+ */
+ d2js.exports.createNode = true;
+d2js.createNode = d2js.insertNode = function(rcd, type){
+	$V(this,rcd, {
+		name : [V.longest(200)],  
+		type : [V.longest(50)]  
+	});
+
+	var id = this.nextId("SEQ_ENTITY");
+	var sql = 
+		"insert into node\n" +
+		"  (id, parent_id, name, type)\n" + 
+		"values\n" + 
+		"  (:id, :parent_id, :name, :type)";
+	
+	this.execute(sql, {id : id, name : rcd.name, type : type.toUpperCase(), parent_id : rcd.parent_id});
+	return id;	
+};
+
+d2js.findAncientTypesAnd = findAncientTypesAnd;
+
+/*
+ * 同样放在事务中。
+ */
+ d2js.exports.updateNode = true;
+d2js.updateNode = function(rcd){
+	$V(this,rcd, {
+		name : [V.longest(200)],  
+		type : [V.longest(50)]  
+	});
+	this.updateRow('node', rcd, ["id","parent_id","name"]);	
+};
+
+/**
+ * 可放于事务中。如为外键已设置 cascade delete 也可单独调用。
+ */
+ d2js.exports.deleteNode = true;
+d2js.deleteNode = function(rcd){
+	this.deleteRow('node', rcd);
+};
+
+d2js.exports.listNodeTypes = true;
+d2js.listNodeTypes = function(){
+	return this.query('select t.child_type as name from (select distinct child_type from node_allowed_children_type order by child_type) t');
+}

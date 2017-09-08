@@ -1,0 +1,303 @@
+
+d2js.fetch = function(params){
+	this.checkPrivilege("uac.sys_role.query");
+	var sql = this.nodeSql(params, findChildTypes('SYS_ROLE')) +
+			'select t.id,t.node,t.name,t.code,t.node_scope,t.role_level,t.status,t.remarks,nd.name node_name from uac.sys_role t, nd where t.node = nd.id ';
+	
+	if(params.name != null) sql += ' and strpos(t.name, :name) > 0';
+	
+	if(params.status != null) sql += ' and strpos(t.status, :status) > 0';
+	
+	sql += 'and t.role_level >= :role_level';
+	params.role_level = this.session.user.role.role_level; 
+	
+	sql = this.appendSort(sql, params._sorts);
+	
+	return this.query(sql, params, params._page);
+};
+
+d2js.setRole = function(params){
+	this.session.user.role = this.session.user.roles[params.idx];
+}
+
+// 提取所有分配的功能及子功能，子功能类型返回 sub，功能类型返回  fun
+d2js.exports.fetchDispatchedFunctions=true;
+d2js.fetchDispatchedFunctions = function(params){	
+	
+	if(params.id == null){
+		params.id = this.session.user.role.id;
+		
+		if(this.session.user.id == 0) return this.fetchAllFunctions(params);
+	}	
+	
+	if(this.executor.isOracle()){
+		sql{.
+			with rf as
+		     (select * from uac.sys_role_function rf where sys_role = :id),
+		    fn as
+		     (select f.name, f.id, f.status, f.code, f.parent_id, f.menu_index
+		       from uac.sys_function f
+		       where id in (select sys_function from rf)
+		     connect by parent_id = prior id
+		       start with id=0),
+		    fn2 as (
+		    select f.name, f.id, f.status, f.code, f.parent_id, f.menu_index, null dependence, rf.DISPATCH_MODE, 'fun' type
+		      from rf, fn f
+		     where f.id = rf.sys_function
+		     ),
+		    sfn as (
+		     select sf.name, sf.id, sf.status, sf.code, sf.sys_function, sf.menu_index,
+		            sf.dependence, rsf.DISPATCH_MODE, 'sub' type
+		       from uac.sub_function sf,
+		            (select * from uac.sys_role_sub_function rsf where rsf.sys_role = :id) rsf,
+		            fn2
+		      where sf.id = rsf.sub_function(+)
+		        and fn2.id = sf.sys_function
+		    ),
+		    sfn2 as (
+		     select sf.name, sf.id, sf.status, sf.code, sf.sys_function, sf.menu_index,
+		            sf.dependence, nvl(sf.dispatch_mode, fn2.dispatch_mode),sf.type
+		     from sfn sf, fn2
+		     where sf.sys_function = fn2.id
+		    ),
+		    a as (
+		    	select * from fn2 union all select * from sfn2
+		    )
+			select a.* from  a
+		.}
+	} else if(this.executor.isPostgreSQL()){
+		sql{.
+			WITH rf AS
+			 (SELECT * FROM uac.sys_role_function rf WHERE sys_role = :id),
+			fn AS
+			 (WITH RECURSIVE fn AS
+			     (SELECT f.name, f.id, f.status, f.code, f.parent_id, f.menu_index
+			       FROM uac.sys_function f
+			      WHERE id = 0
+			     UNION ALL
+			     SELECT f.name, f.id, f.status, f.code, f.parent_id, f.menu_index
+			       FROM uac.sys_function f, fn
+			      WHERE f.parent_id = fn.id
+			        AND f.id IN (SELECT sys_function FROM rf))
+			    SELECT * FROM fn),
+			fn2 AS
+			 (SELECT f.name, f.id, f.status, f.code, f.parent_id, f.menu_index,
+			         NULL ::VARCHAR(500) dependence, rf.dispatch_mode,
+			         'fun' ::VARCHAR(8) "type"
+			    FROM rf, fn f
+			   WHERE f.id = rf.sys_function),
+			rsf AS
+			 (SELECT * FROM sys_role_sub_function rsf WHERE rsf.sys_role = :id),
+			sfn AS
+			 (SELECT sf.name, sf.id, sf.status, sf.code, sf.sys_function, sf.menu_index,
+			         sf.dependence, rsf.dispatch_mode, 'sub' ::VARCHAR(8) "type"
+			    FROM uac.sub_function sf
+			    LEFT OUTER JOIN rsf
+			      ON sf.id = rsf.sub_function /*(+)*/
+			    JOIN fn2
+			      ON fn2.id = sf.sys_function),
+			sfn2 AS
+			 (SELECT sf.name, sf.id, sf.status, sf.code, sf.sys_function, sf.menu_index,
+			         sf.dependence, coalesce(sf.dispatch_mode, fn2.dispatch_mode),
+			         sf.type
+			    FROM sfn sf, fn2
+			   WHERE sf.sys_function = fn2.id),
+			a AS
+			 (SELECT * FROM fn2 UNION ALL SELECT * FROM sfn2)
+			SELECT a.* FROM a
+		.}
+	}
+	return this.query(sql, params);
+};
+
+
+// root 用
+d2js.fetchAllFunctions = function(params){
+	if(this.executor.isOracle()){
+		sql{.
+			with a as
+			 (select f.name, f.id, f.status, f.code, f.parent_id, null dependence, 'T' dispatch_mode,
+			         'fun' type
+			    from uac.sys_function f
+			   start with f.id = 0
+			  connect by parent_id = prior id
+			  union all
+			  select f.name, f.id, f.status, f.code, f.sys_function, f.dependence, 'T', 'sub'
+			    from uac.sub_function f)
+			select a.* from a connect by a.parent_id = prior id start with id=0
+		.}
+	} else if(this.executor.isPostgreSQL()){
+		sql{.
+			WITH RECURSIVE a AS
+			 (SELECT f.name, f.id, f.status, f.code, f.parent_id, NULL dependence,
+			         'T' dispatch_mode, 'fun' "type", ARRAY [ f.menu_index ] path
+			    FROM uac.sys_function f
+			   WHERE id = 0
+			  UNION ALL
+			  SELECT f.name, f.id, f.status, f.code, f.parent_id, NULL, 'T', 'fun',
+			         path || f.menu_index
+			    FROM uac.sys_function f, a
+			   WHERE f.parent_id = a.id),
+			b AS
+			 (SELECT *
+			    FROM a
+			  UNION ALL
+			  SELECT f.name, f.id, f.status, f.code, f.sys_function, f.dependence, 'T',
+			         'sub', path || f.menu_index
+			    FROM uac.sub_function f, a
+			   WHERE f.sys_function = a.id)
+			SELECT NAME, id, status, code, parent_id, dependence, dispatch_mode, TYPE
+			  FROM b
+			 ORDER BY path
+		.}
+	}
+	return this.query(sql, params);
+};
+
+d2js.create = function(rcd){
+	this.checkPrivilege("uac.sys_role.add");
+	$V(this,rcd, {id : [],  
+		node : [V.notNull],  
+		name : [V.longest(100),V.uniqueInNode('uac.sys_role')],
+		code : [V.longest(100),V.uniqueInNode('uac.sys_role')],  
+		role_level : [V.longest(5)],		
+		status : [V.longest(1),V.inside(["N","P"])]  
+		
+	});	
+	
+	this.doTransaction(function(){
+		rcd.id = this.nextId("uac.SEQ_ENTITY");
+		this.actas('uac.sys_role.add', 'uac.sys_role', rcd.id, rcd);
+		this.insertRow('uac.sys_role', rcd, ["id","node","name","code","node_scope","role_level","status","remarks"]);
+		this.updateDispatchedFunctions(rcd.dispatched_functions, rcd.id);
+	});		
+};
+
+d2js.updateDispatchedFunctions = function(sFuns, role){
+	if(sFuns == null || sFuns.length == 0) return;
+	var funs = JSON.parse(sFuns);
+	var subfuns = funs.filter(function(f){return f.type == 'sub';});
+	var funs = funs.filter(function(f){return f.type == 'fun';});
+
+	// sys_role_function	
+	if(funs.length){
+		if(this.executor.isOracle()){
+		    sql{.(sqlMerge)
+		    	MERGE INTO uac.sys_role_function USING dual ON ( sys_function=:id and sys_role = :role)
+					WHEN MATCHED THEN UPDATE SET dispatch_mode = :mode 
+					WHEN NOT MATCHED THEN INSERT (id, sys_function, sys_role, dispatch_mode)
+					    VALUES (seq_nonentity.nextval, :id, :role, :mode)
+			.}
+		} else if(this.executor.isPostgreSQL()){
+			sql{.(sqlMerge)
+				WITH nv(sys_function, sys_role) AS (VALUES(:id, :role)),
+				upsert AS
+				(
+				  UPDATE uac.sys_role_function t SET dispatch_mode = :mode
+				  FROM nv
+				  WHERE t.sys_function = nv.sys_function AND t.sys_role = nv.sys_role
+				  RETURNING t.*
+				)
+				INSERT INTO uac.sys_role_function(id, sys_function, sys_role, dispatch_mode)
+					SELECT nextval('uac.seq_nonentity'), :id, :role, :mode
+					FROM nv
+					WHERE NOT EXISTS(SELECT 1 FROM upsert LIMIT 1)
+			.}
+		}
+	    var arr = [];
+	    for(var i=0; i< funs.length; i++) arr.push('?');
+	    var sqlClean = 'delete from uac.sys_role_function where sys_role = ? and sys_function not in ('+ arr.join(',') +')'; 
+	    
+    	var me = this;
+    	funs.forEach(function(fun, menuIndex){
+    		fun.role = role;
+    		me.execute(sqlMerge, fun);
+    	});
+    	this.execute(sqlClean, [role].concat(funs.map(function(a){return a.id;})));
+	} else {
+		var sqlClean = 'delete from uac.sys_role_function where sys_role = ?';
+		this.execute(sqlClean, [role]);
+	}
+	
+	// sys_role_sub_function
+	funs = subfuns;
+	if(funs.length){
+		if(this.executor.isOracle()){
+		    sql{.(sqlMerge)
+		    	MERGE INTO uac.sys_role_sub_function USING dual ON ( sub_function=:id and sys_role = :role)
+				WHEN MATCHED THEN UPDATE SET dispatch_mode = :mode 
+				WHEN NOT MATCHED THEN INSERT (id, sub_function, sys_role, dispatch_mode)
+				    VALUES (seq_nonentity.nextval, :id, :role, :mode)
+			.}
+		} else if(this.executor.isPostgreSQL()){
+			sql{.(sqlMerge)
+				WITH nv(sub_function, sys_role) AS (VALUES(:id, :role)),
+				upsert AS
+				(
+				  UPDATE uac.sys_role_sub_function t SET dispatch_mode = :mode
+				  FROM nv
+				  WHERE t.sub_function = nv.sub_function AND t.sys_role = nv.sys_role
+				  RETURNING t.*
+				)
+				INSERT INTO uac.sys_role_sub_function(id, sub_function, sys_role, dispatch_mode)
+				SELECT nextval('seq_nonentity'), :id, :role, :mode
+				FROM nv
+				WHERE NOT EXISTS(SELECT 1 FROM upsert LIMIT 1)
+			.}
+		}
+	
+	    var arr = [];
+	    for(var i=0; i< funs.length; i++) arr.push('?');
+	    var sqlClean = 'delete from uac.sys_role_sub_function where sys_role = ? and sub_function not in ('+ arr.join(',') +')'; 
+	    
+    	var me = this;
+    	funs.forEach(function(fun, menuIndex){
+    		fun.role = role;
+    		me.execute(sqlMerge, fun);        		
+    	});
+    	this.execute(sqlClean, [role].concat(funs.map(function(a){return a.id;})));
+	} else {
+		var sqlClean = 'delete from uac.sys_role_sub_function where sys_role = ?';
+		this.execute(sqlClean, [role]);
+	}
+};
+
+d2js.modify = function(rcd){
+	 	 	
+	$V(this,rcd, {id : [],  
+		node : [V.notNull],  
+		name : [V.longest(100),V.uniqueInNode('uac.sys_role')], 
+		code : [V.longest(100),V.uniqueInNode('uac.sys_role')],
+		role_level : [V.longest(5)],  
+		status : [V.longest(1),V.inside(["N","P"])]  
+		
+	});
+
+	this.doTransaction(function(){
+		this.actas('uac.sys_role.edit', 'uac.sys_role', rcd.id, rcd);
+		this.updateRow('uac.sys_role', rcd,  ["id","node","name","code","node_scope","role_level","status","remarks"]);
+		this.updateDispatchedFunctions(rcd.dispatched_functions, rcd.id);
+	});
+};
+
+// 提取公司可用角色
+d2js.fetchAvaliableRoles = function(params){
+	var sql = "select * from (" + this.nodeSql(params,findChildTypes('SYS_ROLE')) +
+			'select t.id,t.node,t.name,t.role_level,t.status, nd.name node_name \
+				from uac.sys_role t, nd where t.node = nd.id and t.role_level >= :role_level'
+			+ ') a union all '
+			+ "select * from (" + this.nodeSql(params,findChildTypes('SYS_ROLE'),null, null, true) +
+			"select t.id,t.node,t.name,t.role_level,t.status, ndr.name node_name \
+			from uac.sys_role t, ndr where t.node = ndr.id and ndr.id <> :node and t.node_scope = 'U' and t.role_level >= :role_level) b";
+	
+	params.role_level = this.session.user.role.role_level;
+	
+	return this.query(sql, params); 
+};
+
+d2js.destroy = function(rcd){
+	this.actas('uac.sys_role.delete', 'uac.sys_role', rcd.id, rcd);
+	this.deleteRows('uac.sys_role_function',{'sys_role':rcd.id});
+	this.deleteRows('uac.sys_station_role_dispatch',{'sys_role':rcd.id});
+	this.deleteRow('uac.sys_role', rcd);
+};

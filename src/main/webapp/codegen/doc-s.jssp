@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+[%
+ 	var diagram = JSON.parse(request.diagram);
+	
+	imports('./jssp-lib/codegen.js');
+%]
+	<title>[%= diagram.name + ' ' + diagram.code %]</title>
+	
+	<meta  http-equiv="X-UA-Compatible" content="IE=9;IE=EDGE;" >
+	
+    [% this.includeJssp('../common/include_lib_semantic.jssp'); %]
+</head>
+<body class="ui container">
+	<h1 id="[%= diagram.code %]">[%= diagram.name %] <small>[%= diagram.code %]</small></h1>
+	[% if(diagram.annotation){ %]
+	<div class="ui ignored info message">[%= diagram.annotation %]</div>
+	[% }%]
+	
+	[% if(diagram.comment){ %]
+	<div class="ui ignored info message">[%= diagram.comment %]</div>
+	[% }%]
+	
+	[% diagram.tables.forEach(function(table){ %]
+		
+		<h2 id="[%= table.code %]">[%= table.name %] <small>[%= table.code %]</small></h2>
+		
+		[% if(table.comment){ %]
+		<div class="ui ignored info message">[%= table.comment %]</div>
+		[% }%]
+	
+		<table class="ui celled striped table">
+			<thead>
+				<tr>
+					<th>字段名</th><th>代码</th><th style="width:32px">&nbsp;</th><th>数据类型</th><th>长度</th><th>约束</th><th>默认值</th><th>FK</th>
+				</tr>
+			</thead>
+			<tbody>
+				[% table.columns.forEach(function(col){ %]
+					<tr>
+						<td>[%= col.name %]</td>
+						<td>[%= col.code %]</td>
+						<td>[%= col.primary ? '<i class="privacy icon"></i>' : '' %]</td>
+						<td>[%= col.type %]</td>
+						<td>[%= col.length || '' %]</td>
+						<td>[%= 
+							(function (){
+								var r = '';
+								if(col.notNull) r += '<li class="item">NOT NULL</li>';
+								if(col.unique) r += '<li class="item">UNIQUE</li>';
+								if(col.listOfValues){
+									r += '<li class="item">Values:</li>';
+									r += '<ul>';
+									var lov = col.listOfValues;
+									for(var k in lov){ if(lov.hasOwnProperty(k)){
+										r += '<li>' + k + ' : ' + lov[k] + '</li>';
+									}}
+									r += '</ul>'
+								}
+								if(r) return '<ul class="ui list">' + r + '</ul>'; else return '';
+							})() 
+						%] </td>
+						<td>
+							[%= col.defaultValue || '' %]
+						</td>
+						<td>
+							[%= col.parentTable ? ('<a href="#' + col.parentTable  + '">' + col.parentTable + '</a>.' + col.parentColumn) : '' %]
+						</td>
+					</tr>
+					[% if(col.comment){ %]
+						<tr class="positive">
+							<td colspan="1000">
+								<pre style="white-space: pre-wrap;">[%= col.comment %]</pre>
+							</td>
+						</tr>
+					[% } %]
+				[% });%]
+			</tbody>
+		</table>
+	
+	[% }); %]
+</body>
+</html>

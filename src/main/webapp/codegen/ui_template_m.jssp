@@ -1,0 +1,126 @@
+[%
+ 	var tb = JSON.parse(request.tableDef);
+	
+	tb.nodeColumn = tb.columns[tb.columns.find(function(col){return col.parentTable == 'node';})];
+
+	imports('./jssp-lib/codegen.js');
+%]
+[%= '[%' %]
+ 	if(request._la == 'true'){
+		return out.printJson([{name : '查询[%=tb.name%]', code : '[%=tb.code%].query', status : 'N'},
+		        {name : '增加[%=tb.name%]', code : '[%=tb.code%].add', status : 'N', dependence : '[%=tb.code%].query'}, 
+		        {name : '编辑[%=tb.name%]', code : '[%=tb.code%].edit', status : 'N', dependence : '[%=tb.code%].query'},
+		        {name : '删除[%=tb.name%]', code : '[%=tb.code%].delete', status : 'N', dependence : '[%=tb.code%].query'}]);
+ 	}
+	var anonymous = request.anonymous;
+	if(session.user == null && !anonymous){
+		return response.sendRedirect(website + 'index.jssp');
+	}
+[%= '%]' %]
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>[%=tb.name%]</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    [%= '[%' %] this.includeJssp('../common/include_lib.jssp'); [%= '%]' %]
+    
+</head>
+<body>
+
+    <div molecule="TableList" table="[%=tb.code%]" edit-dialog="dialog1">
+        <h1>[%=tb.name%]</h1>
+        <div>
+            <form class="form-inline text-right">
+            
+[% tb.columns.filter(function(itm){return itm.searchUiIndex;}).sort(function(itm){return itm.searchUiIndex})
+ 	.forEach(function(col){ %][% cond(col.listOfValues, function(){ %]
+				<div molecule="SearchFormSelectItem" col="[%= col.code %]" text="[%= col.name %]" dict="[%=tb.code + '_' + col.code %]"></div>
+[%}, col.parentTable == 'node', function(){ %]
+             	<div molecule="SearchFormItem" col="node" text="[%= col.name %]">
+                    <div molecule="DropDownTree" table="node" value-col="id" display-col="name" parent-col="parent_id"  select="single" paging="false" show-header="false" data="#[%=tb.code%],search,params,[%= col.code %]">
+                    	<tr>
+                    	 	<m:th molecule="TreeNode" col="name" text="Name"></m:th>
+				        </tr>
+					</div>
+                </div>
+[%}, true, function(){ %]
+				<div molecule="SearchFormItem" col="[%= col.code %]" text="[%= col.name %]">
+                    <input type="text" molecule="SearchInput">
+                </div>
+[% }); }); %]
+                <button molecule="SearchButton">Search</button>
+                [%= '[%' %] if(session.user.allowed['[%=tb.code%].add']){ [%= '%]' %]
+                
+                <button molecule="AddButton">Add</button>
+                [%= '[%' %] } [%= '%]' %]
+            
+            </form>
+        </div>
+        <div molecule="TableError"></div>
+
+        <table molecule="List" allow-remove="[%= '[%' %]= session.user.allowed['[%=tb.code%].delete'] [%= '%]' %]">
+            <thead>
+                <tr>
+                    <th molecule="CheckHeader" col="id"></th>
+[% tb.columns.filter(function(col){return !col.primary}).forEach(function(col){
+	cond(col == tb.nodeColumn,function(){ %]
+			<th molecule="Header" sortable="true" col="node_name" text="[%= col.name %]"></th>
+		[%}, col.listOfValues, function(){ %]
+			<th molecule="Header" sortable="true" col="[%= col.code %]" text="[%= col.name %]" dict="[%=tb.code + '_' + col.code %]" renderer="dict|std"></th>
+		[%}, true, function(){%]
+			<th molecule="Header" sortable="true" col="[%= col.code %]" text="[%= col.name %]"></th>
+		[% });%] 
+	[%}); %]			                               
+                [%= '[%' %] if(session.user.allowed['[%=tb.code%].edit']){ [%= '%]' %]
+                
+                	<th data-t="rows,N,id" renderer="editLink"></th>
+                [%= '[%' %] } [%= '%]' %]               
+                </tr>
+            </thead>
+        </table>
+    </div>
+
+    <div molecule="Dialog" title="[%=tb.name%]" id="dialog1" table="[%=tb.code%]">
+        <form class="table-form">
+[% tb.columns.filter(function(itm){return itm.formUiIndex;}).sort(function(itm){return itm.formUiIndex})
+	.forEach(function(col){ %][% cond(col.listOfValues, function(){ %]
+			<div molecule="FormItem" col="[%= col.code %]" text="[%= col.name %]" dict="[%=tb.code + '_' + col.code %]">
+                <select molecule="Select"></select>
+            </div>
+[%}, col.parentTable == 'node', function(){ %]
+			<div molecule="FormItem" col="[%= col.code %]" text="[%= col.name %]">
+            	 <div molecule="DropDownTree" table="node" value-col="id" display-col="name" select="single" 
+            	 		paging="false" show-header="false" data="#[%=tb.code%],curr,node">
+                   	<tr>
+				        <m:th molecule="TreeNode" col="name" text="Name"></m:th>				        
+			        </tr>
+				</div>				
+            </div>
+[%}, true, function(){ %]					
+			<div molecule="FormItem" col="[%= col.code %]" text="[%= col.name %]"><input type="text" molecule="Input"></div>					
+[% }); }); %]		        			                               
+        </form>
+    </div>
+    
+</body>
+<script>
+
+	[% if(tb.nodeColumn){ %]
+	new db2js.DataTable('node', '../common/node.d2js', {silent : false}).load('listAll', {types : [%= '[%' %]~ findAncientTypes('[%= tb.code.toUpperCase() %]') [%= '%]' %]});
+	[% } %]
+
+	[% tb.columns.filter(function(col){return col.listOfValues;}).forEach(function(col){ %]
+	Dicts.[%=tb.code + '_' + col.code %] = [%~ col.listOfValues %];
+	[% });%]
+	
+    var table = new db2js.DataTable('[%=tb.code %]', '../模块名/[%=tb.code %].d2js');
+    table.on('load', function (error) { db2js.render(); });
+    table.load('fetch');
+    
+</script>
+</html>
+

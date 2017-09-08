@@ -1,0 +1,298 @@
+[% 	if(request._la == 'true'){
+		return out.printJson([{name : '查询部门员工', code : 'person.query', status : 'N'},
+		        {name : '新增部门员工', code : 'person.add', status : 'N', dependence : 'person.query'}, 
+		        {name : '编辑部门员工', code : 'person.edit', status : 'N', dependence : 'person.query'},
+		        {name : '删除部门员工', code : 'person.delete', status : 'N', dependence : 'person.query'}]);
+ 	}
+	var anonymous = request.anonymous;
+	if(session.user == null && !anonymous){
+		return response.sendRedirect(website + 'index.jssp');
+	}
+%]
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>员工管理</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    [% this.includeJssp('../common/include_lib.jssp', {pureBootstrap: true}); %] 
+</head>
+<body>
+	<template>
+	    <div molecule-def=Person>
+		    <div molecule="TableList" table="ns_person,person" edit-dialog="personDialog" id="ParentSelect">
+		        <h1 class="page-title">员工管理</h1>
+		        <div class="search-bar">
+		            <form molecule="SearchForm" style="float: none;">
+		            
+		            	<div class="form-group">
+							
+							<div molecule="SearchFormItem" col="name" text="姓名：">
+		                    	<input type="text" molecule="Input">
+		                	</div>
+		                	<div molecule="SearchFormItem" col="username" text="员工编号：">
+		                    	<input type="text" molecule="Input">
+		                	</div>
+		                	<div molecule="SearchFormItem" col="node" text="部门：" >
+				            	 <div molecule="DropDownTree" table="ns_person,company" value-col="id" display-col="name" autocomplete-col="name" select="single" 
+				            	 		paging="false" show-header="false" data="node" style="min-width:197">
+								    <m:th molecule="TreeNode" col="name" text="Name"></m:th>				        
+								</div>				
+				            </div>
+					  	</div>
+					  	
+		                <button molecule="SearchButton" role="search">搜索</button>
+		                        
+		            </form>
+		          
+		        </div>
+		        <div class="tool-bar">
+		            [% if(session.user.allowed['person.add']){ %]                
+		            <button molecule="AddButton" role="add">添加</button>
+		            [% } %]
+	                [% if(session.user.allowed['person.delete']){ %]                
+	                <button molecule="DelButton" role="delete">删除</button>
+	                [% } %]
+		        </div>
+		        <div molecule="TableError"></div>
+		        <div class="main-table">
+			        <table id="grdMain" molecule="List" checkable="true" select="single" allow-remove="[%= session.user.allowed['person.delete'] %]">
+			            <thead>
+			                <tr>
+			                	<th molecule="CheckHeader" col="id"></th>
+								<th molecule="Header" col="name" text="姓名"></th>
+								<th molecule="Header" col="employee_no " text="员工编号"></th>
+								<th molecule="Header" col="state" text="状态" dict="person_state" renderer="dict|std"></th>
+								<th molecule="Header" col="gender" text="性别" dict="person_gender" renderer="dict|std"></th>
+								<th molecule="Header" col="address " text="地址"></th>
+								<th molecule="Header" col="tel " text="座机"></th>
+								<th molecule="Header" col="mobile " text="电话"></th>
+								<th molecule="Header" col="wechat " text="微信"></th>
+	<!-- 							<th molecule="Header" col="username " text="账号"></th> -->
+								<th molecule="Header" col="email " text="邮箱"></th>
+								<th molecule="Header" col="birth" text="生日" format="yyyy-MM-dd" renderer="date|std" collector="c|d|s"></th>
+							  	[% if(session.user.allowed['person.edit']){ %]                
+				                	<th data-t="id" renderer="editLink">编辑</th>   
+				                [% } %]		 
+			                </tr>
+			            </thead>
+			        </table>
+		        </div>
+		    </div>
+		
+		    <div molecule="Dialog" title="员工管理" id="personDialog" data-size="large">
+		        <form class="table-form" onsubmit="return false">
+					<div molecule="FormItem" col="name" text="姓名："><input type="text" molecule="Input"></div>
+					<div molecule="FormItem" col="employee_no" text="员工编号："><input type="text" molecule="Input"></div>
+					<div molecule="FormItem" col="state" text="状态：" dict="person_state">
+		                <select molecule="Select"></select>
+		            </div>
+					<div molecule="FormItem" col="gender" text="性别：" dict="person_gender">
+		                <select molecule="Select"></select>
+		            </div>
+					<div molecule="FormImageItem" col="photo" text="照片："
+	            	img-style="height: 173px; width: 148px; display: block;" 
+	            	src=""></div>
+					<div molecule="FormItem" col="address" text="地址："><input type="text" molecule="Input"></div>
+					<div molecule="FormItem" col="id_card" text="身份证号 ："><input type="text" molecule="Input"></div>
+					<div molecule="FormItem" col="tel" text="座机："><input type="text" molecule="Input"></div>
+					<div molecule="FormItem" col="mobile" text="电话："><input id="mobile" type="text" molecule="Input"></div>
+					<div molecule="FormItem" col="wechat" text="微信："><input id="wechat" type="text" molecule="Input"></div>
+	<!-- 				<div molecule="FormItem" col="username" text="账号："><input id="username" type="text" molecule="Input"></div> -->
+					<div molecule="FormItem" col="email" text="邮箱："><input id="email" type="text" molecule="Input"></div>
+					<div molecule="FormItem" col="birth" text="出生日期："><input type="date" molecule="Input" renderer="prop('valueAsDate')" collector="prop('valueAsDate')|s"></div>
+		        </form>
+		        <hr>
+		        <form id="stationForm" onsubmit="return false" d2js.root="ns_person,station">
+				
+					<button class="btn btn-default" id="addStation">增加员工岗位</button>&nbsp;&nbsp;
+					<div class="alert alert-info" role="alert" id="message" data="message" renderer='stderr' ></div>
+		      		<table class="table table-striped" id="station_table">
+						<thead>
+							<tr>
+								<th></th><th>所属单位</th><th>岗位</th><th>任职性质</th><th>成员</th><th>操作</th>
+			 				</tr>
+						</thead>
+						<tbody d2js.root="ns_person,station" data="unremovedRows" renderer="repeater">
+							<tr repeater="true">
+								<td>
+									<input type='hidden' data='id' renderer="std" collector="c|s">
+								</td>
+								<td>
+									<div molecule-r="DropDownTree" table="ns_person,company" direction="up"
+										value-col="id" display-col="name" autocomplete-col="name" select="single" paging="false"
+										show-header="false" data="node" style="min-width: 300px;">
+										<m:th molecule-r="TreeNode" col="name" text="公司名称"></m:th>
+									</div>
+								</td>
+								<td>
+									
+									<div class="form-group form-inline" data="findNode,getStations" renderer="options('name','id')">
+										<select class="form-control" data="station" renderer="std" collector="c|n|s"></select>
+									</div>
+								</td>
+								<td>
+									<div  dict="person_kind" class="form-group form-inline" data="this" renderer="dictToList|options('name','id',false)">
+						                <select class="form-control" renderer="std" collector="c|s" data="kind"></select>
+									</div>
+								</td>
+								<td>
+									<div  dict="yn" class="form-group form-inline" data="this" renderer="dictToList|options('name','id',false)">
+						                <select class="form-control" renderer="std" collector="c|s" data="is_member"></select>
+									</div>
+								</td>
+								<td>
+									<button class='btn btn-default' name="delStation">删除岗位</button>
+								</td>
+							</tr>
+						</tbody>
+					 </table>
+					 
+				</form>
+		        
+		    </div>
+			
+			<script constructor>
+	    		var $el = this.$el;
+	    		
+	    		var dataset = d2js.dataset.create('ns_person');
+	    		Dicts.person_gender = {"M": "男", "F": "女"};
+	    		Dicts.person_state = {"A":"在职","D":"离职","P":"实习","N":"未入职"};
+	    		Dicts.person_kind={"B":"正式","T":"流动","P":"兼职","L":"临时","G":"实习"};
+	    		Dicts.is_manager={"true":"是","false":"否"};
+	    		Dicts.yn={"Y":"是","N":"否"};
+			    var table = dataset.addTable('person', '../entity/employee.d2js',{pageSize:10});			  	    
+			    table.on('load', function (error) { 
+			    	if(!error){$el.render(dataset);}
+			    });
+			    table.load('fetch');
+			    table.on('newrow', function (row) { 
+			    	row._set('password','c984aed014aec7623a54f0591da07a85fd4b762d');
+			    	row._set('id',-1);
+			    	row._set('gender',"M");
+			    	row._set('state','A');
+			    	row._set('tag',{"Manager":"false"});
+			    });
+			    
+			    var company = dataset.addTable('company', '../common/node.d2js');
+			    company.on('load', function (error) {
+			    	this.rows.forEach(function(row){
+			    		row.getStations = function(){
+			    			if(this.stations){
+			    				return this.stations;
+			    			} 
+			    			var me = this;
+			    			allStations.load({_m: "fetchStationByNode", node : this.id}, function(error){
+			    				me.stations = this.rows.slice();
+			    				$el.render(dataset); 			
+			    			});
+			    		}
+			    	})
+			    	$el.render(dataset); 
+			    });
+			    company.load({_m:'listAll'});
+			    
+			    var allStations=dataset.addTable('all_station','../uac/sys_station.d2js');
+			    
+			    var station=dataset.addTable('station','../entity/employee_station.d2js');
+			    station.on('load',function(error){
+			    	if(!error){
+	    				station.rows.forEach(function(row){
+	    					row.findNode = function(){
+	    						return dataset.company.find('id', row.node);
+	    					}
+	    				});
+	    			}
+			    	$el.render(dataset);
+			    });
+			    var valiTable = new d2js.DataTable("valiTable", "../entity/person.d2js");
+			    $(function(){
+			    	$el.on('tablelist.edit',function(){
+			    		station.load({_m:'fetchStation','employee':table.curr.id});
+			    	});
+			    });
+			    
+			    dataset.addRelation('person','id','station','employee');
+			    
+			    
+ 			   	$("#personDialog").on('valuechange',"[molecule-r=DropDownTree]", function(event){
+			   		if(event.originalEvent instanceof MouseEvent){
+			   			var cuRow = $(this).findRoot().root;
+			   			var ss = $el.find(this);
+			   			validate();
+			   			$el.render(dataset);
+			   		}
+			   	}); 
+			   	this.dispose = function() {
+					d2js.dataset.release('ns_person');
+				}
+			 
+		 		$el.on('click','#addStation', function(){
+		   			$el.find("[molecule-obj=Dialog]").collect();
+		   			var newRow = station.addRow();
+		   			newRow.employee=table.curr.id ? table.curr.id : -1;
+		   			newRow._set("kind","B");
+		   			station.rows.forEach(function(row){
+    					row.findNode = function(){
+    						return dataset.company.find('id', row.node);
+    					}
+    				});
+		   			$el.render(dataset);
+		   		});
+			   	
+		 		$("#personDialog").on('click',"button[name='delStation']",function(evt,ele){
+		   			var row = $(this).findRoot().root;
+		   			row._remove();
+		   			validate();
+		   			$el.render(dataset);
+		   		});
+			   	
+		 		$("#personDialog").on('willsubmit', function(e, canceller){
+		 			var isNull=true;
+		 			station.rows.forEach(function(row){
+		 				if(row._state!="remove"){
+		 					isNull=false;
+		 					return;
+		 				}
+		 			});
+		 			if(isNull){
+		 				station.message={level:'warning',message:'请选择至少一个岗位'};
+		 				$el.find("#message").render();
+		 			}
+					canceller.cancel = (station.message != null||isNull);
+				});
+		 		
+		 		$("#personDialog").on('change',"#station_table div select", validate);
+			   
+		 		function validate(){
+		   			$el.find("[molecule-obj = Dialog]").collect();
+		   			var valid = true;
+		   			var allRows = station.rows.filter(function(index){return index._state!="remove";});
+		   			for(var i = 0; i < allRows.length-1; i++){
+		   				for(var j = i+1;j <allRows.length;j++){
+		   					if(allRows[j].node == allRows[i].node && allRows[j].station == allRows[i].station){
+			   					valid = false;
+			   				}
+		   				}
+		   			} 
+		   			station.message = valid ? null : {level:'warning',message:'不能绑定相同的岗位'};
+		   			$("#message").render(dataset);
+				}
+		 		
+		 		d2js.Renderers.lernRecordsLink = function(element, v){
+					var e = $(element);
+					e.html('');
+					var a = $(document.createElement('a')).appendTo(e);
+					a.html('查看');
+					a.attr('href', '/start/front/main.jssp?fun=LearnRecords&person='+v);
+					a.data('id', v);
+					
+				}
+			</script>
+		</div>
+	</template>	
+	<div molecule=Person></div>
+</body>
+
+</html>
+

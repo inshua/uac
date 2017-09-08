@@ -1,0 +1,38 @@
+[%
+    imports('./jssp-lib/codegen.js');
+
+ 	Object.prototype.keys = function(){
+		var arr = [];
+		for(var k in this){
+			if(this.hasOwnProperty(k)){
+				arr.push(k);
+			}
+		}
+		return arr;
+	};
+                                
+ 	var tb = JSON.parse(request.tableDef);
+	tb.allColumnCodes = (function(){
+		var arr = [];
+		for(var i=0; i< tb.columns.length; i++){
+			arr.push(tb.columns[i].code);
+		}
+		return arr;
+	})();
+	tb.allColumns = (function(){
+		var d = {};
+		for(var i=0; i< tb.columns.length; i++){
+			d[tb.columns[i].code] = tb.columns[i];
+		}
+		return d;
+	})();
+%]
+
+[% tb.columns.forEach(function(col){%]
+alter table [%= tb.code %] add [%= col.code %] [%= col.type %] [%cond(
+		dbTypeToExtFiledType(col.type) == 'string', function(){ %]([%=col.length%])[%},
+		col.primary, function(){ %]primary key[% }, 
+		col.notNull, function(){ %]not null [% },
+		col.defaultValue != '', function(){ %] default [%= col.defaultValue %] [% }
+	);%];
+[%});%]

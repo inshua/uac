@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>登录员工选择</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../css/common/choose.css"/>
+[% this.includeJssp('../common/include_lib.jssp'); %]
+	
+[%	
+		if(request.choose){
+			var em = session.employeeChooses[request.choose];
+			var roles = this.callD2js("../login.d2js","findRoles",[em.id]);
+			logger.info("ROLES:"+ JSON.stringify(roles));
+			session.roles = roles;
+			response.sendRedirect('station-choose.jssp');
+		}else{
+		   var personId = session.user.id;
+		   var employees = this.callD2js("../login.d2js","findEmployeeByPerson",[personId]);
+		   session.employeeChooses = employees;
+		}
+		
+	
+%]
+</head>
+<body>
+
+	[% function getState(st){
+		switch(st){
+			case 'A':
+				return '在职';
+			case 'P':
+				return '实习';
+			case 'N':
+				return '未入职';
+			case 'D':
+				return '离职';
+			default:
+				return '';
+		}
+	}%]
+	
+	<div class="choose-list">
+	   <div class="title">请选择您的员工编号</div>
+	   <ul>
+	       [% session.employeeChooses.forEach(function(choose,idx){ %]
+	       <li>
+	           <a href="?choose=[%= idx%]">
+	               <span>[%= choose.employee_no %]</span>
+	               <span>[%= getState(choose.state) %]</span>
+	               <div class="choose-go">
+	                   <i class="icon-chevron-right"></i>
+	               </div>
+	           </a>
+	       </li>
+	       [% }); %]
+	    </ul>
+	</div>
+</body>
+</html>

@@ -1,0 +1,53 @@
+
+d2js.fetch = function(params){
+	
+	var sql = this.nodeSql(params,findAncientTypesAnd("EMPLOY_LOG")) +
+			'select t.id,t.node,t.start_date,t.end_date,t.job,t.person,t.sys_user,t.status, nd.name node_name from employ_log t, nd where t.node = nd.id';
+
+	
+	sql = this.appendSort(sql, params._sorts);
+	
+	return this.query(sql, params, params._page);
+};
+
+
+d2js.create = function(rcd){
+	 	 	
+	$V(this,rcd, {id : [],  
+		node : [],  
+		start_date : [],  
+		end_date : [],  
+		job : [],  
+		person : [],  
+		sys_user : [],  
+		status : [V.longest(1),V.inside(["A","P","F"]),],  
+	});
+
+	
+	rcd.id = this.nextId("seq_nonentity");
+	this.actas('employ_log.add', 'employ_log', rcd.id, rcd);
+	this.insertRow('employ_log', rcd, ["id","node","start_date","end_date","job","person","sys_user","status"]);		
+};
+
+d2js.modify = function(rcd){
+	 	 	
+	$V(this,rcd, {id : [],  
+		node : [],  
+		start_date : [],  
+		end_date : [],  
+		job : [],  
+		person : [],  
+		sys_user : [],  
+		status : [V.longest(1),V.inside(["A","P","F"]),],  
+		
+	});
+
+	
+	this.actas('employ_log.edit', 'employ_log', rcd.id, rcd);
+	this.updateRow('employ_log', rcd, ["id","node","start_date","end_date","job","person","sys_user","status"]);
+};
+
+d2js.destroy = function(rcd){
+	this.actas('employ_log.delete', 'employ_log', rcd.id, rcd);
+	this.deleteRow('employ_log', rcd);
+};

@@ -1,0 +1,119 @@
+d2js.fetch=function(params){
+	sql{.
+		,
+		st AS 
+		    (SELECT t.id
+		    FROM uac.sys_station t, nd
+		    WHERE node = nd.id
+		            AND t.status = 'A' ), em AS 
+		    (SELECT t.*
+		    FROM uac.employee t, uac.employee_station est, st
+		    WHERE st.id = est.station
+		            AND est.employee = t.id
+		            AND t.state != 'N' ), pe AS 
+		    (SELECT person.*
+		    FROM uac.person, em
+		    WHERE person.id = em.person )
+		SELECT em.id id, em.employee_no, em.state,  em.nodes, em.sys_stations, pe.id person_id,
+		         pe.password, pe.name, pe.address, pe.tel,  pe.mobile, pe.tag, pe.photo, pe.wechat,  pe.username, pe.email, pe.birth, pe.gender, pe.id_card,
+		         array_to_string(array (SELECT name  FROM uac.node WHERE id = any(em.nodes)), ',') node_names
+		FROM em, pe
+		WHERE pe.id = em.person
+		sql{.?(params.name)
+			 	and strpos(pe.name, :name) > 0 
+		.}
+		
+		sql{.?(params.username)
+			 	and pe.username=:username 
+			 
+		.}
+		sql{.?(params.no_state)
+				and em.state!=:no_state 
+		.}
+		
+	.}
+	sql = this.appendSort(sql, params._sorts);
+	return this.query(this.nodeSql(params, findAncientTypes('PERSON')) + sql, params,params._page);
+
+}
+
+// 先用这个版本，后面改好上面的版本后再实用
+d2js.fetch=function(params){
+	sql{.
+		select em.id id,em.employee_no, em.state,em.nodes,em.sys_stations,
+			pe.id person_id,pe.password,pe.name,pe.address,pe.tel,pe.mobile,pe.tag,pe.photo,
+			pe.wechat,pe.username,pe.email,pe.birth,pe.gender,pe.id_card,
+			array_to_string(array(select name from node where id = any(em.nodes)), ',') node_names
+		from employee em, person pe where pe.id = em.person and em.state != 'N'
+		and exists (select * from nd where id = any(em.nodes))
+	
+		sql{.?(params.name)
+			 	and strpos(pe.name, :name) > 0 
+		.}
+		
+		sql{.?(params.username)
+			 	and pe.username=:username 
+			 
+		.}
+		sql{.?(params.no_state)
+				and em.state!=:no_state 
+		.}
+		
+	.}
+	sql = this.appendSort(sql, params._sorts);
+	return this.query(this.nodeSql(params, findAncientTypes('PERSON')) + sql, params,params._page);
+
+};
+
+d2js.modify = function(rcd){
+	this.doTransaction(function(){
+		this.updateRow('employee',rcd,['id','employee_no','state']);
+		this.callD2js("person.d2js","modify",rcd);
+	});
+};
+
+d2js.updateNodes = function(employeeId){
+	sql{.
+		update uac.employee e
+			set sys_stations = array(select station from uac.employee_station where employee = e.id),
+				nodes = array(select distinct st.node from uac.sys_station st, uac.employee_station es where es.employee = e.id and es.station = st.id and es.is_member = 'Y')
+			where e.id = :id
+	.}
+	this.execute(sql, {id: employeeId})
+}
+
+
+d2js.create = function(rcd){
+	$V(this,rcd, {id : [],  
+		state : [V.notNull],
+		employee_no:[V.notNull],
+	});
+	
+	this.doTransaction(function(){
+		rcd.person=this.callD2js("person.d2js","create",rcd);
+		rcd.id = this.nextId("employee_id_seq1");
+		this.session.employeeid = rcd.id;
+		
+		this.insertRow('employee', rcd, ['id','employee_no','state','person']);
+	});
+	
+
+	return rcd.id;		
+};
+
+d2js.getNodesOfStations = function(stations){
+	sql{.
+		select array(select distinct node from sys_station where id=any(?))	
+	.}
+	return this.queryScalar(sql,[$ARRAY("int", stations)]);
+};
+
+d2js.destroy = function(rcd){
+//	this.actas('person.delete', 'person_station', rcd.id, rcd);
+	this.doTransaction(function(){
+		this.updateRow('employee',{'id':rcd.id,'nodes':null,'sys_stations':null});
+		this.deleteRows('employee_station',{'employee':rcd.id});
+	});
+	
+};
+

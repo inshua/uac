@@ -1,0 +1,162 @@
+[%  if(request._la == 'true'){
+        return out.printJson([{name : '查询部门', code : 'department.query', status : 'N'},
+                {name : '增加部门', code : 'department.add', status : 'N', dependence : 'department.query'}, 
+                {name : '编辑部门', code : 'department.edit', status : 'N', dependence : 'department.query'},
+                {name : '删除部门', code : 'department.delete', status : 'N', dependence : 'department.query'}]);
+    }
+    var anonymous = request.anonymous;
+    if(session.user == null && !anonymous){
+        return response.sendRedirect(website + 'index.jssp');
+    }
+%]<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>部门管理</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+[% this.includeJssp('../common/include_lib.jssp'); %]
+</head>
+<body>
+<template>
+		<div molecule-def='DepartmentManage'>
+		    <div molecule="TableList" table="ns_department,department" edit-dialog="ns_department-dialog" >
+		        <h1 class="page-title">部门管理</h1>
+		        <div class="search-bar">
+		            <form molecule="SearchForm" style="float: none;">
+		                <div molecule="SearchFormItem" col="name" text="部门名称：">
+		                    <input type="text" molecule="Input">
+		                </div>
+		            
+		                <div molecule="SearchFormItem" col="parent_id" text="所属公司：">
+		                    <div molecule="DropDownTree" table="ns_department,company" value-col="id"
+		                        display-col="name" select="single" paging="false"
+		                        show-header="false"
+		                        data="parent_id"
+		                        style="min-width: 200px;">
+		                        <tr>
+		                            <m:th molecule="TreeNode" col="name" text="公司名称"></m:th>
+		                        </tr>
+		                    </div>
+		                </div>
+		            
+		                <button molecule="SearchButton" role="search">搜索</button>
+		            
+		            </form>
+		        </div>
+		        <div class="tool-bar">
+		            [% if(session.user.allowed['department.add']){ %] 
+		            <button molecule="AddButton" role="add">添加</button>
+		            [% } %]
+		            [% if(session.user.allowed['department.delete']){ %]                
+		            <button molecule="DelButton" role="delete">删除</button>
+		            [% } %]
+		        </div>
+		        <div class="main-table">
+		            <div molecule="TableError"></div>
+		            <table id="grdMain" molecule="List" allow-remove= "[%= (session.user.allowed['department.delete']) %]">
+		                <thead>
+		                    <tr>
+		                        <th molecule="CheckHeader" col="id" text="ID"></th>
+		                        <th molecule="Header" sortable="false" col="name" text="部门名称" ></th>
+		                        <th molecule="Header" sortable="false" col="node_name" text="所属公司" ></th>
+		                        <th molecule="Header" sortable="false" col="def,contactMan" text="联系人"></th>
+		                        <th molecule="Header" sortable="false" col="def,tel" text="联系电话"></th>
+		                        [% if(session.user.allowed['department.edit']){ %] 
+		                        <th data-t="id" renderer="editLink"></th> 
+		                        [% } %]
+		                    </tr>
+		                </thead>
+		            </table>
+		        
+		        </div>
+		    </div>
+		    
+		    <div molecule="Dialog" title="部门信息" id="ns_department-dialog">
+	            <form class="table-form" onsubmit="return false">
+	                <div molecule="FormItem" col="id" text=''>
+	                    <input type="hidden" molecule="Input" id="idValue">
+	                </div>
+	                <div molecule="FormItem" col="name" text="部门名称：">
+	                    <input type="text" molecule="Input" size="30">
+	                </div>
+	
+	                <div molecule="FormItem" col="parent_id" text="所属单位：">
+	
+	                    <div molecule="DropDownTree" table="ns_department,company_without_curr" value-col="id" display-col="name" select="single" paging="false"
+	                        show-header="false" data="parent_id" style="min-width: 300px;">
+	                        <tr>
+	                            <m:th molecule="TreeNode" col="name" text="单位名称"></m:th>
+	                        </tr>
+	                    </div>
+	                </div>
+	                <div molecule="FormItem" col="def,address" text="部门地址：">
+	                    <input type="text" molecule="Input" collector="c|oc" size="45">
+	                </div>
+	
+	                <div molecule="FormItem" col="def,contactMan" text="部门联系人：">
+	                    <input type="text" molecule="Input" collector="c|oc" size="15">
+	                </div>
+	
+	                <div molecule="FormItem" col="def,tel" text="部门电话：">
+	                    <input type="text" molecule="Input" collector="c|oc" size=20>
+	                </div>
+	
+	                <div molecule="FormItem" col="def,remark" text="备注：">
+	                    <textarea molecule="TextArea" collector="c|oc" rows="5" cols="50"></textarea>
+	                </div>
+	            </form>
+	        </div>
+		    <script constructor>
+	            var  $el = this.$el;
+	            var dataset = d2js.dataset.create("ns_department");
+	            var table = dataset.addTable('department','../entity/department.d2js');
+	            table.on('load',function(error){
+	                $el.render(dataset);
+	            });
+	            table.load('fetch');
+	            
+	            table.on("submit",function(err){
+	                if(!err){
+	                    company.reload();
+	                }
+	            });
+	            var company = dataset.addTable('company', '../entity/department.d2js');
+	            company.on('load', function(error) {
+	                $el.render(dataset);
+	            });
+	            company.load({_m:'listCompanyWithDept'});
+	            
+	            var t2 = dataset.addTable('company_without_curr');      // 不带编辑行的一个镜像表
+	            
+	            $(function(){
+	                $el.on('tablelist.edit', function(){
+	                    t2.fill(company.rows.filter(function(row){
+	                            return row.id != table.curr.id && !isBelongTo(row,table.curr)
+	                        }).map(function(row){return row._toJson()}));       
+	                    $el.find('#ns_department-dialog').render(t2);
+	                }); 
+	            });
+	            
+	            function isBelongTo(fun, maybeParent){
+	                while(fun){
+	                    if(fun.parent_id == maybeParent.id){
+	                        return true;
+	                    }
+	                    if(fun.parent_id == 0) break;
+	                    fun = table.find('id', fun.parent_id);
+	                }
+	            }
+	            
+	            this.dispose = function() {
+	                d2js.dataset.release('ns_department');
+	            }
+	            
+		    </script>
+		    
+		</div>
+	</template>
+
+    <div molecule="DepartmentManage"></div>
+
+</body>
+</html>

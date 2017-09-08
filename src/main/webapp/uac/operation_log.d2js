@@ -1,0 +1,35 @@
+d2js.fetch = function(params){
+	this.checkPrivilege("uac.operation_log.query");
+	sql{.
+		select p.name person_name,sf.name function_code_name, ol.apply_table, ol.start_time,ol.result from person p, operation_log ol, sub_function sf  
+		where p.id = ol.person and sf.code = ol.function_code
+	
+		sql{.?(params.person)
+		 	and strpos(p.name, :person) > 0 
+		.}
+		
+		sql{.?(params.apply_table)
+		 	and ol.apply_table = :apply_table
+		.}
+		
+		code{.
+			if(params.start_time){
+				sql{. and ol.start_time >= :start_time .}
+			}else{
+				sql{. and ol.start_time >= extract(epoch from current_date - integer '1')*1000 .}
+			}
+		.}
+		
+		sql{.?(params.end_time)
+			and ol.start_time <= :end_time
+		.}
+		
+		sql{.?(params.result)
+			and ol.result = :result
+		.}
+		order by ol.start_time desc,person_name asc
+	.}
+	
+	return this.query(sql,params, params._page)
+
+}

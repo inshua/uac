@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<!--[if IE 8]> <html lang="en" class="ie8 no-js"> <![endif]-->
+ 
+<!--[if IE 9]> <html lang="en" class="ie9 no-js"> <![endif]-->
+ 
+<!--[if !IE]><!--> <html lang="en" class="no-js"> <!--<![endif]-->
+<head>
+<meta charset="UTF-8">
+<title>[%=homeTitle%]</title>
+[%
+ 	if(session.user == null) return response.sendRedirect('../index.jssp');
+%]
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="shortcut icon" href="../images/favicon.ico" />
+<style>
+	@media screen{
+		.nav .nav-header {
+		  display: block;
+		  padding: 3px 15px;
+		  font-size: 11px;
+		  font-weight: bold;
+		  line-height: 20px;
+		  color: #999999;
+		  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+		  *zoom: 1;
+		}
+	}
+</style>
+
+[% this.includeJssp('../common/include_lib.jssp'); %]
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sidebar/3.3.2/jquery.sidebar.min.js"></script>
+<style>
+.login-dialog {
+	padding-top: 10%;
+}
+
+.embed-modal {
+	position: relative;
+	top: auto;
+	right: auto;
+	left: auto;
+	bottom: auto;
+	z-index: 1;
+	display: block;
+	font-size: 14px;
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
+.header_bg {
+	margin-top: 0px;
+	margin-bottom: 0px;
+	background-color: #ffffff;
+	background-image: url('images/logo-sm.jpg');
+	background-repeat: no-repeat;
+	background-position: left center;
+	min-height: 88px;
+	padding-left: 220px;
+	padding: 22px 22px 22px 220px;
+	min-height: 88px;
+}
+
+.large_bg {
+	margin-top: 0px;
+	background-image: url('images/large-bg.jpg');
+	background-size: cover;
+}
+
+.container-full {
+	margin: 0 auto;
+	width: 99%;
+	max-width: 100%;
+}
+
+#footer {
+	margin: 40px 0px 0px 0px;
+	padding: 20px 0px 40px 0px;
+}
+
+.narrow-nav{
+	margin-bottom : 8px;
+}
+
+</style>
+</head>
+<body class="page-header-fixed">
+	[%
+	 	var functions = session.user.functions;		
+		// 顶级功能
+		var funcRoots = functions.roots || (functions.roots = function(){ 
+			var stk = [];
+			var tops = [];
+			var data = functions;
+			for(var i=0; i < data.length;i++){
+				var row = data[i];
+				while(stk.length){
+					var prev = stk[stk.length -1];
+					if(row.parent_id == prev.id){
+						if(prev.data) prev.data.push(row); else prev.data = [row];	// 因为行数组用的属性名是 data，子节点也必须用 data，如果用children，因为没有标为 leaf，会发生反复递归
+						if(stk.length <= 2) {	// 展开 2 层
+							prev.expanded = true;
+						}
+						break;
+					} else {
+						prev.leaf = (prev.data == null);
+						stk.pop();
+					}
+				}
+				if(stk.length == 0) tops.push(row);
+				stk.push(row);
+			}
+			if(stk.length){stk[stk.length-1].leaf = true;}
+			
+			return tops.filter(function trimInvisible(fun){
+				if(fun.data && fun.data.length){
+					fun.data = fun.data.filter(trimInvisible);
+				}
+				return (fun.open_mode != 'N' || (fun.data && fun.data.length)) && fun.status != 'H';
+			});
+			
+		}());
+		
+	%]
+	<div class="header navbar navbar-fixed-top">
+    	<div class="navbar-inner">
+    		<!-- BEGIN LOGO -->
+            <a class="brand" href="#">
+            <img src="../images/logo.png" alt="logo">
+                <span class="mylogo">[%= appTitle %]</span>
+            </a>
+            <!-- END LOGO -->
+            <div class="sidebar-toggler hidden-phone" style="display:inline-block; width: 25px;height: 25px;margin-left:8px;margin-top:10px;"></div>
+       
+        </div>
+	</div>
+	<div class="page-sidebar nav-collapse"> 
+	   [% 
+		function getIcon(fun){
+              	if(fun.icon_url ){
+	    		if(fun.icon_url.indexOf("icon-") == 0)
+		    		return '<i class= "'+ fun.icon_url+'"></i>';  
+	    		else
+		    		return '<img width="16" height="16" src = "'+fun.icon_url+'"/>';
+   			}else{
+   				return '';
+   			}
+          	}%]
+
+  		 [%
+              function createSysFunLink(fun, level){
+                  if (level == 1) {
+                      var iconAndName =  getIcon(fun)+ '<span class="title">' + fun.name + '</span>';
+                  } else if (level == 2) {
+                      var iconAndName = fun.name;
+                  }
+                  if(fun.open_mode == 'W' || fun.open_mode == 'w'){
+                      return '<a href="' + fun.uri + '" target="_blank">' + iconAndName + '</a>';
+                  } else if(fun.open_mode == 't'){
+                      return '<a href="###" fun-uri="' + (website + fun.uri) + '" fun-code="' + fun.code + '">' + iconAndName  + '</a>';
+                  } else if(fun.open_mode == 'N'){
+                      return '<a href="###">' + iconAndName + '</a>'
+                  } else if(fun.open_mode == 'C'){
+                      return '<a href="###" data-molecule="true" fun-uri="' + fun.uri + '" fun-code="' + fun.code + '">' + iconAndName  + '</a>';
+                  } else if(fun.open_mode == 'P'){
+                  	return '<a href="' + request.contextPath + fun.uri + '" fun-code="' + fun.code + '">' + iconAndName  + '</a>';
+                  } else{
+                  	return iconAndName;
+                  }
+              }
+          %]
+          <ul class="page-sidebar-menu">
+                [% funcRoots[0].data.forEach(function(fun){ %]
+                    [% if(fun.data && fun.data.length){ %]
+                        <li class="">
+                            <a href="###">
+                                [%= getIcon(fun) %]<span class="title">[%= fun.name %]</span>
+                                <span class="arrow "></span>
+                            </a>
+                            <ul class="sub-menu">
+                                [% fun.data.forEach(function(fun){%]
+                                    <li class="myli1">
+                                        [%= createSysFunLink(fun, 2) %]
+                                    </li>
+                                [% }); %]
+                            </ul>
+                        </li>
+                    [% } else { %]
+                        <li>[%= createSysFunLink(fun, 1) %]</li>
+                    [% } %]
+                [% }); %]
+            </ul>    
+      </div>
+	<div id="content_div" class="page-container">
+		<ul class="nav nav-pills" id="tabActionsNav">
+		  <li class="active"><a href="#home" data-toggle="tab">首页</a></li>
+		</ul>
+
+		<!-- Tab panes -->
+		<div class="tab-content" id="tabContents">			
+		  <div class="tab-pane active" id="home">
+		  		Welcome
+		  </div>
+		</div>
+	</div>
+	
+</body>
+<script>
+
+	async function loadTarget(code,uri,name,isMolecule){
+		var aId = 'a_id_' + code; 
+		var id = 'tab_id_' + code;
+		if(document.getElementById(id)){	
+			$('#' + aId).tab('show');
+		} else {
+			var ele = document.createElement('li');
+			ele.innerHTML = '<a href="#' + id + '" data-toggle="tab" id="' + aId + '">' + name + '&nbsp;<span class="close">×</span></a>';
+			tabActionsNav.appendChild(ele);
+
+			// var random = Ext.Number.randomInt(0, 200);
+			var randomId = new Date() * 1;
+			
+			var cnt = document.createElement('div');
+			cnt.className = "tab-pane";
+			cnt.id = id;
+			cnt.style.marginTop = '6px';
+			if(isMolecule){
+				// Molecule.debug = true;
+				if(Molecule.definesByFullname[code] == null){
+					await Molecule.loadHtml('[%= website %]/' + uri);
+				}
+				$('<div class="+ main-content" molecule=' + code + '></div>').appendTo(cnt)
+				tabContents.appendChild(cnt);
+			} else {
+				cnt.innerHTML = '<iframe id="' + randomId + '" src="' + uri + '" frameborder="0"  width="100%" height="500px" onLoad=\'setupIframe("' + randomId + '")\'></iframe>';
+				tabContents.appendChild(cnt);
+			}
+			$('#tabActionsNav a:last').tab('show');
+			$(ele).find(".close").click(function () {
+			     //there are multiple elements which has .closeTab icon so close the tab whose close icon is clicked
+			     var tabContentId = $(this).parent().attr("href");
+			     $(this).parent().parent().remove(); //remove li of tab
+			     $('#tabActionsNav a:last').tab('show'); // Select first tab
+			     $(tabContentId).remove(); //remove respective tab content
+			});
+		}
+						
+	}
+	
+	
+	
+	$(document).ready(function(){
+		$(document).on('click', 'a[fun-uri]', async function(event){
+			$(event.target).closest('.dropdown').click();
+			var code = $(event.target).attr('fun-code');
+			var uri = $(event.target).attr('fun-uri');
+			var name = $(event.target)[0].innerText;
+			var isMolecule = $(event.target).data('molecule');
+			
+			await loadTarget(code,uri,name,isMolecule);
+		});
+		
+		[%
+			var reg= /^[\w]*$/g;
+			if(!(reg.test(request.fun))){
+				throw new Error('error fun ' + request.fun);
+			}
+		%]
+		
+		
+		[%if(request.fun){%]
+			(function(){
+			
+				var s = [%~ request.fun %];
+				
+				var reg = /^[\w]*$/g;
+				if(!(reg.test(s))){
+					throw new Error('error fun ' + s);
+				}
+				
+				s = ['a[fun-code=', s, ']'].join('');
+								
+				var $a = $(s);
+				
+				var $this = $a.closest('ul').show().parents('li').first();
+			
+				if($this){
+					$this.addClass('active open');
+				}
+			
+				[% var fun = session.user.functions.find(function(f){return (f.code).equals(request.fun)});%]
+			
+				var fun = [%~ fun%]
+			
+// 				console.log(fun);
+				if(fun){
+					loadTarget(fun.code,fun.uri, fun.name,fun.open_mode == 'C');
+				}
+			})();
+		[%}%]
+		
+	});
+	
+	function setupIframe(id){
+		var frame = document.getElementById(id);
+		frame.contentWindow.iframe = frame;
+		frame.contentDocument.iframe = frame;
+		frame.height = Math.max(frame.contentWindow.height || 0, 640);
+	};
+
+	$(function(){
+		$('.sidebar-toggler').click(function(){
+			if($(".page-sidebar").data('close')){
+				$(".page-sidebar").sidebar({side: 'left'}).trigger("sidebar:open")
+				$(".page-sidebar").data('close', 0)
+			} else {
+				$(".page-sidebar").sidebar({side: 'left'}).trigger("sidebar:close")
+				$(".page-sidebar").data('close', 1)
+			}
+		})
+		
+		$(document).click(function(evt){
+			if($(evt.target).is('.sidebar-toggler') || $(evt.target).parents(".page-sidebar").length) return;
+			if($(".page-sidebar").data('close') === 0){
+				$(".page-sidebar").sidebar({side: 'left'}).trigger("sidebar:close")
+				$(".page-sidebar").data('close', 1)
+			}
+		})
+	})
+</script>
+</html>

@@ -1,0 +1,391 @@
+[% 	if(request._la == 'true'){
+		return out.printJson([{name : '查询系统功能', code : 'uac.sys_function.query', status : 'N'},
+		        {name : '增加系统功能', code : 'uac.sys_function.add', status : 'N', dependence : 'uac.sys_function.query'}, 
+		        {name : '编辑系统功能', code : 'uac.sys_function.edit', status : 'N', dependence : 'uac.sys_function.query'},
+		        {name : '删除系统功能', code : 'uac.sys_function.delete', status : 'N', dependence : 'uac.sys_function.query'}]);
+ 	}
+	var anonymous = request.anonymous;
+	if(session.user == null && !anonymous){
+		return response.sendRedirect(website + 'index.jssp');
+	}
+%]<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>系统功能设置</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    [% this.includeJssp('../common/include_lib.jssp'); %]    
+</head>
+<body>
+	<template>
+	    <div molecule-def=SysFunction class="AFD">
+		    <div molecule="TableList" table="ns_sys_function,sys_function" edit-dialog="functionDialog" id="ParentSelect" paging=false>
+		        <h1 class="page-title">系统功能设置</h1>
+		        <div class="search-bar">
+	                <form molecule="SearchForm" style="float:none;">  
+	                    <div class="form-row">                                                
+		                    <div molecule="SearchFormItem" col="name" text="名称：">
+		                        <input type="text" molecule="Input">
+		                    </div>
+		            
+		                    <div molecule="SearchFormItem" col="parent_id" text="上级功能：" >
+		                         <div molecule="DropDownTree" table="ns_sys_function,all_sys_function" value-col="id" display-col="name" autocomplete-col="name" select="single" 
+		                                paging="false" show-header="false" data="parent_id" data-width="197">
+		                            <tr>
+		                                <m:th molecule="TreeNode" col="name" text="Name"></m:th>                        
+		                            </tr>
+		                        </div>              
+		                    </div>
+		
+		                    <div molecule="SearchFormSelectItem" col="status" text="状态：" dict="sys_function_status">                    
+		                    </div>           
+	                    </div>
+		                <div class="form-row btn-row">
+		                    <button molecule="SearchButton" role="search" >搜索</button>
+		                </div>
+	                </form>
+		        </div>
+		        <div class="tool-bar">
+	                [% if(session.user.allowed['uac.sys_function.add']){ %]                
+	                <button molecule="AddButton" role="add">新增</button>
+	                [% } %] 
+		        </div>
+		        <div molecule="TableError"></div>
+		        <div class="main-table">
+	    	        <table id="grdMain" molecule="Tree" checkable="true" select="single" allow-remove="[%= session.user.allowed['uac.sys_function.delete'] %]">
+	    	            <thead>
+	    	                <tr>
+	    						<th molecule="TreeNode" col="name" text="功能名称" renderer="nameAndIcon|treeNode"></th>
+	    	                
+	    						<th molecule="Header" sortable="false" col="code" text="操作代码"></th>
+	    			 
+	    						<th molecule="Header" sortable="false" col="status" dict="sys_function_status" renderer="dict|std" text="状态"></th>
+	    			 
+	    						<th molecule="Header" sortable="false" col="uri" text="URI"></th>
+	    						
+	    						<th molecule="Header" sortable="false" col="open_mode" text="打开方式" dict="sys_function_open_mode" renderer="dict|std"></th>
+	    					  
+	    					  	<th data-t="id" renderer="actionkLink">动作</th>
+	    					  
+	    					  	[% if(session.user.allowed['uac.sys_function.edit']){ %]                
+	    		                	<th data-t="id" renderer="editLink">编辑</th>   
+	    		                [% } %]
+	    		                  
+	    		                [% if(session.user.allowed['uac.sys_function.delete']){ %]                
+	    		                	<th data-t="id" renderer="deleteLink">删除</th>
+	    		                [% } %] 
+	    					  
+	    					  	<th data-t="id" renderer="upLink"></th>   
+	    					  	
+	    					  	<th data-t="id" renderer="downLink"></th>   
+	    					  	
+	    	                </tr>
+	    	            </thead>
+	    	        </table>
+		        </div>
+		    </div>
+		
+		    <div molecule="Dialog" title="系统功能" id="functionDialog">
+		        <form class="table-form" onsubmit="return false">
+					<div molecule="FormItem" col="name" text="名称：" id="lookAt"><input type="text" molecule="Input"></div>
+					
+					<div molecule="FormItem" col="icon_url" text="功能图标："><input type="text" molecule="Input"></div>
+					
+					<div molecule="FormItem" col="code" text="操作代码："><input type="text" molecule="Input"></div>
+					
+					<div molecule="FormItem" col="uri" text="URI：">
+						<input type="text" molecule="Input">
+						<button class="btn btn-default" id="showAvailableBtn">查看可用操作</button>
+					</div>					
+							
+					<div molecule="FormItem" col="parent_id" text="上级功能：">
+		            	 <div molecule="DropDownTree" table="ns_sys_function,sys_function_without_curr" value-col="id" display-col="name" autocomplete-col="name" select="single" 
+		            	 		paging="false" show-header="false" data="parent_id" data-width="250">
+		                   	<tr>
+						        <m:th molecule="TreeNode" col="name" text="Name"></m:th>				        
+					        </tr>
+						</div>				
+		            </div>
+										
+					<div molecule="FormItem" col="status" text="状态：" dict="sys_function_status">
+		                <select molecule="Select"></select>
+		            </div>
+		            
+		            <div molecule="FormItem" col="open_mode" text="打开方式：" dict="sys_function_open_mode">
+		                <select molecule="Select"></select>
+		            </div>
+							
+					<div molecule="FormItem" col="remarks" text="备注："><textarea molecule=TextArea cols=40 rows=5></textarea></div>			
+							
+		        </form>
+		    </div>
+		
+		    <div molecule="Dialog" id="checkAvalibleDialog" d2js.root="ns_sys_function,avalible_action_sys_function" show-buttons=false title="动作">
+		      
+					<table class="table table-striped" data="this" renderer="table">
+						<thead>
+							<tr>
+								<th data-t="name" renderer="std" collector-t="c|s">名称</th>
+								<th data-t="code" renderer="std" collector-t="c|s">代码</th>
+								<th data-t="dependence" renderer="std" collector-t="c|s">依赖操作</th>
+								<th data-t="status" dict="sys_function_status" renderer="dict|std" collector-t="c|s">状态</th>
+								</tr>
+						</thead>
+					</table>  	
+		      
+		    </div>
+		   
+		    <div molecule="Dialog" id="actionDialog" d2js.root="ns_sys_function,action_sys_function" show-buttons=false title="动作">
+		      
+					<form onsubmit="return false">
+				      	  <span>修改了子功能列表后，可在此处重新加载到数据库。</span>
+				      	  <button class="btn btn-default" id="resetBtn">重新设置</button>
+		
+						  <table class="table table-striped" data="this" renderer="table">
+							<thead>
+								<tr>
+									<th data-t="name" renderer="std" collector-t="c|s">名称</th>
+									<th data-t="code" renderer="std" collector-t="c|s">代码</th>
+									<th data-t="dependence" renderer="std" collector-t="c|s">依赖操作</th>
+									<th data-t="status" dict="sys_function_status" renderer="dict|std" collector-t="c|s">状态</th>
+				 				</tr>
+							</thead>
+						  </table>  
+					  </form>    	
+		      
+		    </div>	
+			<script constructor>
+	    		var $el = this.$el;
+	    		
+	    		var dataset = d2js.dataset.create('ns_sys_function');
+				
+	    		Dicts.sys_function_status = {"N": "正常", "D": "禁用","H":"不可见（正常）"}
+				Dicts.sys_function_open_mode = {"N": "无界面", "t": "在Ext TabPanel中开启", 
+				                                "W": "在新窗口开启", "M": "在新模式对话框开启", 
+				                                "w": "以Ext新窗口开启（仍在原页面）", 
+				                                "m": "以Ext新模式对话框开启（仍在原页面）",
+				                                "C": "以molecule标签打开",
+				                                "P": "以全页面的方式打开"}
+	    		
+			    var table = dataset.addTable('sys_function', '../uac/sys_function.d2js');
+	    		
+	    		table.on('newrow', function(row){
+	    			row._set('status', 'N')._set('open_mode', 'C');
+	    		})
+			  	
+			    table.on('load', function (error) { 
+			    	$el.render(dataset);
+			    });
+			    table.load('fetch');
+			    
+			    table.on('submit', function(error){
+			    	if(!error){
+			    		allFunctions.reload();
+			    	}
+			    	
+			    })			    
+			    
+			    var allFunctions = dataset.addTable('all_sys_function', '../uac/sys_function.d2js');
+			    allFunctions.on('load', function (error) { 
+			    	$el.render(allFunctions); 
+			    	
+			    });
+			    allFunctions.load({_m:'listAll'});
+			
+			    var availibleActionTable=dataset.addTable('avalible_action_sys_function', '../uac/sys_function.d2js');
+		    	availibleActionTable.on('load', function (error) { 
+		    		$el.find('#checkAvalibleDialog').modal('show').render(availibleActionTable);
+		    	});
+			    
+		    	var actionTable=dataset.addTable('action_sys_function', '../uac/sys_function.d2js');
+		    	actionTable.on('load', function (error) {
+		    		$el.find('#actionDialog').modal('show').render(actionTable);
+		    	});
+			    
+			    
+			    var t2 = dataset.addTable('sys_function_without_curr');		// 不带编辑行的一个镜像表
+			    
+			    $(function(){
+			    	
+			    	$el.on('tablelist.edit', function(){
+			    		t2.fill(allFunctions.rows.filter(function(row){
+				    			return row.id != table.curr.id && !isBelongTo(row,table.curr)
+				    		}).map(function(row){return row._toJson()}));		
+			    		$el.find('#functionDialog').render(t2);
+			    		$el.find('#showAvailableBtn').on('click',function(){
+				    		showAvailableOperations(table.curr.id);			    		
+				    	});
+			    		
+			    	});	
+
+			    });
+			    
+			    function isBelongTo(fun, maybeParent){
+			    	while(fun){
+			    		if(fun.parent_id == maybeParent.id){
+			        		return true;
+			    		}
+			    		if(fun.parent_id == 0) break;
+			        	fun = table.find('id', fun.parent_id);
+			    	}
+			    }
+			
+			    
+			    d2js.Renderers.actionkLink=function(element,value){
+			    	var row = d2js.findArg(arguments, 'row');
+			    	var e=$(element);
+			    	var a=$(document.createElement('a')).appendTo(e);
+			    	a.addClass("glyphicon glyphicon-edit");
+			    	a.attr('href', '###');
+			    	a.data('id', value);
+			    	a.on('click', function(){			
+			    		showActionOperations(row);
+					});
+			    }
+			    
+			    d2js.Renderers.upLink=function(element,value){	 
+			    	var row=d2js.findArg(arguments, 'row');
+					var e=$(element);		
+					var a = $(document.createElement('a')).appendTo(e);
+					a.addClass("glyphicon glyphicon-chevron-up");
+					a.attr('href', '###');
+					a.data('id', value);
+				
+					var sibling = findPrevSibling(row);
+					if(!sibling){
+						$(a).hide();			
+					}		
+					a.on('click', function(){			
+						if(sibling){
+							exchangeMenuIndex(row, sibling);
+						}
+					});
+					
+			    }
+			    
+			    d2js.Renderers.deleteLink=function(element,value){
+			    	var row=d2js.findArg(arguments, 'row');
+					var e=$(element);		
+					var a = $(document.createElement('a')).appendTo(e);
+					a.html('删除');
+					a.attr('href', '###');
+					a.css('color', '#fc4f3f');
+					
+					a.on('click',function(){remove(row)})
+			    		
+			    }
+			    d2js.Renderers.downLink=function(element,value){			
+					var row=d2js.findArg(arguments, 'row');
+					var e=$(element);		
+					var a = $(document.createElement('a')).appendTo(e);
+					a.addClass("glyphicon glyphicon-chevron-down");
+					a.attr('href', '###');
+					a.data('id', value);
+					
+					var sibling = findNextSibling(row);
+					if(!sibling){
+						$(a).hide();			
+					}
+					a.on('click', function(){
+						if(sibling){
+							exchangeMenuIndex(row, sibling);
+						}
+					});
+			    }
+			    //查看可用操作
+			    function showAvailableOperations(value){
+			    	availibleActionTable.load({_m:'listAction',id:value * 1});    	    	
+			    }
+			    
+			    //动作点击
+			    function showActionOperations(row){
+				    $el.find('#resetBtn').on('click',function(){resetActions(row);});
+			    	actionTable.load({_m:'listAction',id:row.id});
+			    }
+			    
+			    function remove(row){
+			    	row._remove();
+			    	table.submit({callback:function(error){
+			    		if(!error){
+			    			table.reload();
+			    		}else{
+			    			$el.render(dataset);
+			    		}
+			    	}});
+			    	
+			    	
+			    }
+			    function resetActions(row){
+			    	
+			    	var actionTable=dataset.addTable('action_sys_function', '../uac/sys_function.d2js');
+			    	actionTable.on('load', function (error) { 
+			    		$el.find('#actionDialog').modal('show').render(actionTable);
+			    	});
+			    	actionTable.load({_m:'resetActions',id:row.id,uri:row.uri});
+				
+			    }
+			
+				function findPrevSibling(row){
+					
+					for(var i=table.rows.length-1;i>=0;i--){			
+						var tempRow=table.rows[i];			
+						if(tempRow.parent_id==row.parent_id){			
+							if(tempRow.menu_index<row.menu_index){	
+								return tempRow;
+							}
+						}			
+					}
+					
+				}
+			
+			    
+				function findNextSibling(row){		
+					for(var i=0;i<table.rows.length;i++){		
+						var tempRow=table.rows[i];			
+						if(tempRow.parent_id==row.parent_id){			
+							if(tempRow.menu_index>row.menu_index){				
+								return tempRow;
+							}
+						}
+						
+					}
+					
+				}
+				
+			    function exchangeMenuIndex(row1,row2){
+			    	var menuIndex=row1.menu_index;		
+			    	row1._set('menu_index',row2.menu_index);
+					row2._set('menu_index',menuIndex);
+					table.submit({callback : function(error){
+						if(!error){
+							this.reload();
+						}
+					}});
+			    }
+			    
+			    this.dispose = function() {
+			    	console.info('sys_role dispose');
+					d2js.dataset.release('ns_sys_function');
+				}
+			</script>
+			<script>
+			    //模块图标渲染处理
+			    d2js.Renderers.nameAndIcon = function(element, value,  columnName, row, index, rows, _1, table){
+			    	if(row.icon_url ){
+			    		if(row.icon_url.indexOf("icon-") == 0)
+				    		return '<i class= "'+ row.icon_url+'"></i> ' + value;  
+			    		else
+				    		return '<img width="16" height="16" src = "'+row.icon_url+'"/> '+value;
+			    	}else
+			    		return value;
+			    	
+		    	}
+			</script>
+		</div>
+	</template>
+	<div molecule=SysFunction></div>
+</body>
+
+</html>
+

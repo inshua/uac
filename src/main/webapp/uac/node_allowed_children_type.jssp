@@ -1,0 +1,107 @@
+[% 	if(request._la == 'true'){
+		return out.printJson([
+			{ name: '查询可能下属节点类型', code: 'uac.node_allowed_children_type.query', status: 'N' },
+	        { name: '增加可能下属节点类型', code: 'uac.node_allowed_children_type.add', status: 'N', dependence: 'uac.node_allowed_children_type.query' },
+	        { name: '编辑可能下属节点类型', code: 'uac.node_allowed_children_type.edit', status: 'N', dependence: 'uac.node_allowed_children_type.query' },
+	        { name: '删除可能下属节点类型', code: 'uac.node_allowed_children_type.delete', status: 'N', dependence: 'uac.node_allowed_children_type.query' }]);
+ 	}
+	var anonymous = request.anonymous;
+	if(session.user == null && !anonymous){
+		return response.sendRedirect(website + 'index.jssp');
+	}
+%]<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>子类型管辖关系设置</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+[% this.includeJssp('../common/include_lib.jssp'); %]
+</head>
+<body>
+	<template>
+		<div molecule-def='NodeAllowedChildrenType'>
+			<div molecule="TableList" table="ns_node_allow_children_type,node_allow" edit-dialog="node_allow-dialog" >
+		        <h1 class="page-title">子类型管辖关系管理</h1>
+		        <div class="search-bar">
+					<form molecule="SearchForm" style="float: none;">
+					    <div class="form-row">
+			                <div molecule="SearchFormItem" col="parent_type" text="父节点：">
+			                    <input type="text" molecule="Input">
+			                </div>
+			                <div molecule="SearchFormItem" col="child_type" text="子节点：">
+			                    <input type="text" molecule="Input">
+			                </div>
+			                <button molecule="SearchButton" role="search">搜索</button>
+					    </div>
+						
+					</form>
+				</div>
+				<div class="tool-bar">
+			        [% if(session.user.allowed['node_allowed_children_type.add']){ %] 
+			        <button molecule="AddButton" role="add">添加</button>
+			        [% } %]
+			        [% if(session.user.allowed['node_allowed_children_type.delete']){ %] 
+		            <button molecule="DelButton" role="delete">删除</button>
+		            [% } %]
+		            
+				</div>
+				<div molecule="TableError"></div>
+				<div class="main-table">
+					<table id="grdMain" molecule="List" allow-remove="[%= session.user.allowed['node_allowed_children_type.delete'] %]" >
+						<thead>
+							<tr>
+								<th molecule="CheckHeader" col="id" text="ID"></th>
+								<th molecule="Header" sortable="false" col="parent_type" text="父节点" ></th>
+								<th molecule="Header" sortable="false" col="child_type" text="子节点" ></th>
+								[% if(session.user.allowed['sys_station.edit']){ %] 
+								<th data-t="id" renderer="editLink"></th> 
+								[% } %]
+							</tr>
+						</thead>
+					</table>
+		        </div>
+			</div>
+			
+			<div molecule="Dialog" title="编辑可能下属节点信息" id="node_allow-dialog" data-size="large">
+					<form class="table-form" onsubmit="return false">
+						<div molecule="FormItem" col="id" text=''>
+							<input type="hidden" molecule="Input" id="idValue">
+						</div>
+						<div molecule="FormItem" col="parent_type" text="父节点类型：">
+							<input type="text" molecule="Input" size="30">
+						</div>
+						<div molecule="FormItem" col="child_type" text="子节点类型：">
+							<input type="text" molecule="Input" size="30">
+						</div>
+		
+					</form>
+				</div>
+			<script constructor>
+					var  $el = this.$el;
+					
+					var dataset = d2js.dataset.create("ns_node_allow_children_type");
+					var table = dataset.addTable('node_allow','../uac/node_allowed_children_type.d2js');
+					table.on('load',function(error){
+						$el.render(dataset);
+					});
+					table.load('fetch');
+					
+					table.on("submit",function(err){
+						if(!err){
+							table.reload();
+						}
+					});
+					
+					this.dispose = function() {
+						d2js.dataset.release('ns_node_allow_children_type');
+					}
+			   		
+			</script>
+			
+		</div>
+	</template>
+
+	<div molecule="NodeAllowedChildrenType"></div>
+
+</body>
+</html>

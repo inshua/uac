@@ -1,0 +1,52 @@
+d2js.fetch = function(params){
+	sql{.
+	   select t.id,t.code,t.meaning,t.allow_node_types 
+	     from sys_role_code t
+	    where 1 = 1
+	.}
+
+	sql = this.appendSort(sql, params._sorts);
+	
+	var table = this.query(sql, params, params._page);
+	return table;
+};
+
+
+d2js.listAll = function(params){
+	sql{.
+	   select t.id,t.code,t.meaning 
+	     from sys_role_code t
+	    order by t.meaning
+	.}
+
+	return this.query(sql);
+};
+
+d2js.create = function(rcd){
+	 	 	
+	$V(this,rcd, {id : [],  
+				code : [V.notNull,V.longest(40),],  
+				meaning : [V.longest(40),],  
+				allow_node_types : [T.array('varchar')],  
+			});
+	
+	this.actas('sys_role_code.add', 'sys_role_code', rcd.id, rcd);
+	this.insertRow('sys_role_code', rcd, ["code","meaning","allow_node_types"]);
+};
+
+d2js.modify = function(rcd){
+	 	 	
+	$V(this,rcd, {id : [],  
+			code : [V.notNull,V.longest(40),],  
+			meaning : [V.longest(40),],  
+			allow_node_types : [T.array('varchar')],  
+			});
+	
+	this.actas('sys_role_code.edit', 'sys_role_code', rcd.id, rcd);
+	this.updateRow('sys_role_code', rcd, ["id","code","meaning","allow_node_types"]);
+};
+
+d2js.destroy = function(rcd){
+	this.actas('sys_role_code.delete', 'sys_role_code', rcd.id, rcd);
+	this.deleteRow('sys_role_code', rcd);
+};
