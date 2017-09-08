@@ -143,7 +143,7 @@ d2js.tryCreateUserOfPerson = function(person, node, role, suggestUsernames){
 		userRow = {id : this.nextId("SEQ_ENTITY"), 
 		               username : usernameRow.u, 
 		               login_type: 'G', password : null, 	// 账号默认为使用个人全局账号，用户名只是占个位子，所以密码为空
-		               node : node, status : 'N', 
+		               node : node, state : 'N', 
 		               email : person.email, mobile : person.mobile,
 		               remarks : 'auto generated for ' + person.name,
 		               person : person.id
@@ -162,13 +162,13 @@ d2js.findEmployLog = function(person, roleId, node){
 
 d2js.startEmployLog = function(person, nodeId, userId, roleId){
 	var rcd = {  
-	    id : $SQL("nextval('uac.seq_nonentity')"), person : person.id, node : nodeId, start_date : new Date(), sys_role : roleId, sys_user : userId, status : 'A' 
+	    id : $SQL("nextval('uac.seq_nonentity')"), person : person.id, node : nodeId, start_date : new Date(), sys_role : roleId, sys_user : userId, state : 'A' 
 	};
 	this.insertRow('uac.employ_log', rcd);
 }
 
 d2js.stopEmployLog = function(employLog){
-	this.execute("update uac.employ_log set end_date = now(), status = 'F' where id=?", [employLog.id]);
+	this.execute("update uac.employ_log set end_date = now(), state = 'F' where id=?", [employLog.id]);
 }
 
 d2js.destroyPerson = function(params, rcd){

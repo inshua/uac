@@ -1,8 +1,8 @@
 [% 	if(request._la == 'true'){
-		return out.printJson([{name : '查询岗位代码表', code : 'uac.sys_station.query', status : 'N'},
-		        {name : '增加岗位代码表', code : 'uac.sys_station.add', status : 'N', dependence : 'uac.sys_station.query'}, 
-		        {name : '编辑岗位代码表', code : 'uac.sys_station.edit', status : 'N', dependence : 'uac.sys_station.query'},
-		        {name : '删除岗位代码表', code : 'uac.sys_station.delete', status : 'N', dependence : 'uac.sys_station.query'}]);
+		return out.printJson([{name : '查询岗位代码表', code : 'uac.sys_station.query', state : 'N'},
+		        {name : '增加岗位代码表', code : 'uac.sys_station.add', state : 'N', dependence : 'uac.sys_station.query'}, 
+		        {name : '编辑岗位代码表', code : 'uac.sys_station.edit', state : 'N', dependence : 'uac.sys_station.query'},
+		        {name : '删除岗位代码表', code : 'uac.sys_station.delete', state : 'N', dependence : 'uac.sys_station.query'}]);
  	}
 	var anonymous = request.anonymous;
 	if(session.user == null && !anonymous){
@@ -65,7 +65,7 @@
 								<th molecule="CheckHeader" col="id" text="ID"></th>
 								<th molecule="Header" sortable="false" col="name" text="岗位名称" ></th>
 								<th molecule="Header" sortable="false" col="node_name" text="所在单位" ></th>
-								<th molecule="Header" sortable="false" col="status" text="状态" dict="sys_station_status" renderer="dict|std"></th>
+								<th molecule="Header" sortable="false" col="state" text="状态" dict="sys_station_state" renderer="dict|std"></th>
 								<th molecule="Header" sortable="false" col="visibility" text="可见性" dict="sys_station_visibility" renderer="dict|std"></th>
 								<th molecule="Header" sortable="false" col="kind" text="岗位性质" dict="sys_station_kind" renderer="dict|std"></th>
 								[% if(session.user.allowed['uac.sys_station.edit']){ %] 
@@ -96,7 +96,7 @@
 							</div>
 						</div>
 						
-						<div molecule="FormItem" col="status" text="状态：" dict="sys_station_status">
+						<div molecule="FormItem" col="state" text="状态：" dict="sys_station_state">
 							<select molecule="Select"></select>
 						</div>
 		
@@ -153,7 +153,7 @@
 				var  $el = this.$el;
 				Dicts.sys_station_visibility = {"V":"可见","H":"不可见"};
 				Dicts.sys_station_is_root = {"Y":"是","N":"否"};
-				Dicts.sys_station_status = {"N":"正常","D":"禁用"};
+				Dicts.sys_station_state = {"N":"正常","D":"禁用"};
 				Dicts.sys_station_kind = {"B":"正式岗位","T":"流动岗位","L":"临时岗位","G":"实习生"};
 				
 				var dataset = d2js.dataset.create("ns_sys_station");
@@ -169,7 +169,7 @@
 				});
 				
 				table.on('newrow', function(row){
-					row._set('id', -1)._set('visibility','H')._set('status','N')._set('is_root','N')._set('kind','L');
+					row._set('id', -1)._set('visibility','H')._set('state','N')._set('is_root','N')._set('kind','L');
 				})
 				
 				var company = dataset.addTable('company', '../common/node.d2js');

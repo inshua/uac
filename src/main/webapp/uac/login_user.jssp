@@ -1,5 +1,5 @@
 [% 	if(request._la == 'true'){
-		return out.printJson([{name : '强制下线', code : 'offOnline.query', status : 'N'}]);
+		return out.printJson([{name : '强制下线', code : 'offOnline.query', state : 'N'}]);
  	}
 	var anonymous = request.anonymous;
 	if(session.user == null && !anonymous){

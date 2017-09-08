@@ -1,8 +1,8 @@
 [%  if(request._la == 'true'){
-        return out.printJson([{name : '查询部门', code : 'department.query', status : 'N'},
-                {name : '增加部门', code : 'department.add', status : 'N', dependence : 'department.query'}, 
-                {name : '编辑部门', code : 'department.edit', status : 'N', dependence : 'department.query'},
-                {name : '删除部门', code : 'department.delete', status : 'N', dependence : 'department.query'}]);
+        return out.printJson([{name : '查询部门', code : 'department.query', state : 'N'},
+                {name : '增加部门', code : 'department.add', state : 'N', dependence : 'department.query'}, 
+                {name : '编辑部门', code : 'department.edit', state : 'N', dependence : 'department.query'},
+                {name : '删除部门', code : 'department.delete', state : 'N', dependence : 'department.query'}]);
     }
     var anonymous = request.anonymous;
     if(session.user == null && !anonymous){

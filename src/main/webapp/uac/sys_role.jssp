@@ -1,8 +1,8 @@
 [% 	if(request._la == 'true'){
-		return out.printJson([{name : '查询系统角色', code : 'uac.sys_role.query', status : 'N'},
-		        {name : '增加系统角色', code : 'uac.sys_role.add', status : 'N', dependence : 'uac.sys_role.query'}, 
-		        {name : '编辑系统角色', code : 'uac.sys_role.edit', status : 'N', dependence : 'uac.sys_role.query'},
-		        {name : '删除系统角色', code : 'uac.sys_role.delete', status : 'N', dependence : 'uac.sys_role.query'}]);
+		return out.printJson([{name : '查询系统角色', code : 'uac.sys_role.query', state : 'N'},
+		        {name : '增加系统角色', code : 'uac.sys_role.add', state : 'N', dependence : 'uac.sys_role.query'}, 
+		        {name : '编辑系统角色', code : 'uac.sys_role.edit', state : 'N', dependence : 'uac.sys_role.query'},
+		        {name : '删除系统角色', code : 'uac.sys_role.delete', state : 'N', dependence : 'uac.sys_role.query'}]);
  	}
 	var anonymous = request.anonymous;
 	if(session.user == null && !anonymous){
@@ -50,7 +50,7 @@
 		                    	<input type="text" molecule="Input">
 		                	</div>
 							
-						    <div molecule="SearchFormSelectItem" col="status" text="状态：" dict="sys_role_status">                    
+						    <div molecule="SearchFormSelectItem" col="state" text="状态：" dict="sys_role_state">                    
 		               		</div>
 					  	
 					  	</div>
@@ -83,7 +83,7 @@
 							
 							<th molecule="Header" col="role_level" text="角色级别"></th>
 				 
-							<th molecule="Header" col="status" dict="sys_role_status" renderer="dict|std" text="状态"></th>
+							<th molecule="Header" col="state" dict="sys_role_state" renderer="dict|std" text="状态"></th>
 				 
 						  	[% if(session.user.allowed['uac.sys_role.edit']){ %]                
 			                	<th data-t="id" renderer="editLink">编辑</th>   
@@ -112,7 +112,7 @@
 					
 					<div molecule="FormItem" col="role_level" text="角色级别："><input type="text" molecule="Input" collector="c|n|s"></div>
 										
-					<div molecule="FormItem" col="status" text="状态：" dict="sys_role_status">
+					<div molecule="FormItem" col="state" text="状态：" dict="sys_role_state">
 		                <select molecule="Select"></select>
 		            </div>
 							
@@ -135,7 +135,7 @@
 	<!-- 							<th molecule="Header" col="dispatch_mode" text="mode"></th>    -->
 								<th molecule="Header" col="code" text="操作代码"></th>
 													
-								<th molecule="Header" sortable="false" col="status" dict="sys_function_status" renderer="dict|std" text="状态"></th>	   
+								<th molecule="Header" sortable="false" col="state" dict="sys_function_state" renderer="dict|std" text="状态"></th>	   
 			                </tr>
 			            </thead>
 			        </table>
@@ -148,9 +148,9 @@
 	    		
 	    		var dataset = d2js.dataset.create('ns_sys_role');
 				
-	    		Dicts.sys_role_status = {"N": "正常", "P": "暂停"}
+	    		Dicts.sys_role_state = {"N": "正常", "P": "暂停"}
 				Dicts.sys_role_open_mode = { "O": "不可转授", "T": "可转授", "D": "无权" }
-	    		Dicts.sys_function_status = { "N": "正常", "D": "禁用" };
+	    		Dicts.sys_function_state = { "N": "正常", "D": "禁用" };
 	    		
 			    var table = dataset.addTable('sys_role', '../uac/sys_role.d2js',{pageSize:10});			  	    
 			    table.on('load', function (error) { 
@@ -161,7 +161,7 @@
 			  
 			    table.on('newrow', function (row) { 
 			    	row._set('node_scope','R');
-			    	row._set('status','N');
+			    	row._set('state','N');
 			    });
 			    $('#roleDialog').on('willsubmit', function(e, canceller){
 			    	var tempDispath = getFunctionInfo();

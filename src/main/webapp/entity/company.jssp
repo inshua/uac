@@ -1,7 +1,7 @@
-[% if(request._la == 'true'){ return out.printJson([{name : '查询公司表',code : 'company.query', status : 'N'}, 
-{name : '增加公司表', code :'company.add', status : 'N', dependence : 'company.query'}, 
-{name :'编辑公司表', code : 'company.edit', status : 'N', dependence :'company.query'},
-{name : '删除公司表', code : 'company.delete', status :'N', dependence : 'company.query'}]); } 
+[% if(request._la == 'true'){ return out.printJson([{name : '查询公司表',code : 'company.query', state : 'N'}, 
+{name : '增加公司表', code :'company.add', state : 'N', dependence : 'company.query'}, 
+{name :'编辑公司表', code : 'company.edit', state : 'N', dependence :'company.query'},
+{name : '删除公司表', code : 'company.delete', state :'N', dependence : 'company.query'}]); } 
  
  var anonymous =request.anonymous;
  if(session.user == null && !anonymous){ 

@@ -1,4 +1,4 @@
-[% if(request._la == 'true'){ return out.printJson([{name : '查询日志管理表',code : 'uac.operation_log.query', status : 'N'}]); } 
+[% if(request._la == 'true'){ return out.printJson([{name : '查询日志管理表',code : 'uac.operation_log.query', state : 'N'}]); } 
  
  var anonymous =request.anonymous;
  if(session.user == null && !anonymous){ 

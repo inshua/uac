@@ -1,9 +1,9 @@
 [% 	if(request._la == 'true'){
 		return out.printJson([
-			{ name: '查询可能下属节点类型', code: 'uac.node_allowed_children_type.query', status: 'N' },
-	        { name: '增加可能下属节点类型', code: 'uac.node_allowed_children_type.add', status: 'N', dependence: 'uac.node_allowed_children_type.query' },
-	        { name: '编辑可能下属节点类型', code: 'uac.node_allowed_children_type.edit', status: 'N', dependence: 'uac.node_allowed_children_type.query' },
-	        { name: '删除可能下属节点类型', code: 'uac.node_allowed_children_type.delete', status: 'N', dependence: 'uac.node_allowed_children_type.query' }]);
+			{ name: '查询可能下属节点类型', code: 'uac.node_allowed_children_type.query', state: 'N' },
+	        { name: '增加可能下属节点类型', code: 'uac.node_allowed_children_type.add', state: 'N', dependence: 'uac.node_allowed_children_type.query' },
+	        { name: '编辑可能下属节点类型', code: 'uac.node_allowed_children_type.edit', state: 'N', dependence: 'uac.node_allowed_children_type.query' },
+	        { name: '删除可能下属节点类型', code: 'uac.node_allowed_children_type.delete', state: 'N', dependence: 'uac.node_allowed_children_type.query' }]);
  	}
 	var anonymous = request.anonymous;
 	if(session.user == null && !anonymous){

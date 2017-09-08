@@ -116,7 +116,7 @@
 				if(fun.data && fun.data.length){
 					fun.data = fun.data.filter(trimInvisible);
 				}
-				return (fun.open_mode != 'N' || (fun.data && fun.data.length)) && fun.status != 'H';
+				return (fun.open_mode != 'N' || (fun.data && fun.data.length)) && fun.state != 'H';
 			});
 			
 		}());

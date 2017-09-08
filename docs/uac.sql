@@ -646,7 +646,7 @@ CREATE TABLE sub_function (
     name character varying(100),
     sys_function numeric,
     menu_index numeric,
-    status character(1),
+    state character(1),
     code character varying(100),
     dependence character varying(500)
 );
@@ -662,8 +662,8 @@ COMMENT ON TABLE sub_function IS '子操作可以由系统功能URI提供。提�
 当设定URI后，点击自动获取子操作按钮，此时向该URI发出带有 _m=listOp 的查询字符串，如果URI支持自说明，则根据URI返回的自说明自动生成子操作。
 自说明格式如：
 [
-  {name : ''增加'', code : ''add'', status : ''N''} ,
-  {name : ''修改'', code : ''edit'', status : ''N''} ,
+  {name : ''增加'', code : ''add'', state : ''N''} ,
+  {name : ''修改'', code : ''edit'', state : ''N''} ,
 ]';
 
 
@@ -683,7 +683,7 @@ CREATE TABLE sys_function (
     name character varying(100) NOT NULL,
     parent_id numeric,
     menu_index numeric,
-    status character(1) NOT NULL,
+    state character(1) NOT NULL,
     developer numeric,
     code character varying(200) NOT NULL,
     uri character varying(200),
@@ -717,7 +717,7 @@ CREATE TABLE sys_role (
     id numeric NOT NULL,
     node numeric NOT NULL,
     name character varying(100) NOT NULL,
-    status character(1) NOT NULL,
+    state character(1) NOT NULL,
     role_level numeric(5,0),
     node_scope character(1) NOT NULL,
     remarks character varying(2000),
@@ -819,12 +819,12 @@ COMMENT ON COLUMN sys_role_sub_function.dispatch_mode IS '为了防止增加子�
 CREATE TABLE sys_station (
     id integer NOT NULL,
     node integer,
-    status character(1),
+    state character(1),
     remarks character varying(4000),
     visibility character(1) DEFAULT 'V'::bpchar,
     name character varying(100),
     kind character(1),
-    CONSTRAINT ckc_status_sys_stat CHECK (((status IS NULL) OR (status = ANY (ARRAY['N'::bpchar, 'D'::bpchar])))),
+    CONSTRAINT ckc_status_sys_stat CHECK (((state IS NULL) OR (state = ANY (ARRAY['N'::bpchar, 'D'::bpchar])))),
     CONSTRAINT ckc_visibility_sys_stat CHECK (((visibility IS NULL) OR (visibility = ANY (ARRAY['V'::bpchar, 'H'::bpchar]))))
 );
 
@@ -1308,7 +1308,7 @@ SELECT pg_catalog.setval('seq_operation_log', 1587, true);
 -- Data for Name: sub_function; Type: TABLE DATA; Schema: uac; Owner: uac
 --
 
-COPY sub_function (id, name, sys_function, menu_index, status, code, dependence) FROM stdin;
+COPY sub_function (id, name, sys_function, menu_index, state, code, dependence) FROM stdin;
 2352	删除部门	1928	3	N	department.delete	department.query
 2351	编辑部门	1928	2	N	department.edit	department.query
 2354	增加公司表	1685	1	N	company.add	company.query
@@ -1346,7 +1346,7 @@ COPY sub_function (id, name, sys_function, menu_index, status, code, dependence)
 -- Data for Name: sys_function; Type: TABLE DATA; Schema: uac; Owner: uac
 --
 
-COPY sys_function (id, name, parent_id, menu_index, status, developer, code, uri, open_mode, icon_url, remarks) FROM stdin;
+COPY sys_function (id, name, parent_id, menu_index, state, developer, code, uri, open_mode, icon_url, remarks) FROM stdin;
 0	所有功能	\N	0	N	\N	all	empty	N	\N	\N
 9	系统管理	0	12	N	\N	sys	\N	N	icon-lock	\N
 602	组织机构管理	0	13	N	\N	entity	\N	N	icon-group	\N
@@ -1366,7 +1366,7 @@ COPY sys_function (id, name, parent_id, menu_index, status, developer, code, uri
 -- Data for Name: sys_role; Type: TABLE DATA; Schema: uac; Owner: uac
 --
 
-COPY sys_role (id, node, name, status, role_level, node_scope, remarks, code) FROM stdin;
+COPY sys_role (id, node, name, state, role_level, node_scope, remarks, code) FROM stdin;
 10157	533	OP	N	1	R	\N	OP
 \.
 
@@ -1425,7 +1425,7 @@ COPY sys_role_sub_function (id, sys_role, sub_function, dispatch_mode) FROM stdi
 -- Data for Name: sys_station; Type: TABLE DATA; Schema: uac; Owner: uac
 --
 
-COPY sys_station (id, node, status, remarks, visibility, name, kind) FROM stdin;
+COPY sys_station (id, node, state, remarks, visibility, name, kind) FROM stdin;
 1405	533	N	\N	V	OPS	B
 1407	535	N	\N	V	China OP	B
 \.

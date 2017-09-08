@@ -8,8 +8,8 @@ d2js.fetch = function(params){
 		 	and strpos(t.name, :name) > 0 
 		.}
 		 
-		sql{.?(params.status)
-			and strpos(t.status, :status) > 0 
+		sql{.?(params.state)
+			and strpos(t.state, :state) > 0 
 		.} 
 		   
 		sql{.?(params.visibility)
@@ -31,7 +31,7 @@ d2js.validate = function(rcd, action){
 	$V(this,rcd, {
 		'name' : [V.notNull,V.longest(30)],  
 		'node' : [V.notNull],
-		'status': [V.inside(['N','D'],'请选择状态')], 
+		'state': [V.inside(['N','D'],'请选择状态')], 
 		'visibility' : [V.inside(['V','H'],'请选择可见性')],
 		'kind':[V.inside(['B','T','L','G'],'请选择岗位性质')],
 		'remarks':[V.longest(4000)],
@@ -46,13 +46,13 @@ d2js.create = function(rcd){
 	
 	this.actas('uac.sys_station.add', 'uac.sys_station', rcd.id, rcd);
 	 
-	return this.insertRow('uac.sys_station', rcd, ["id","name","node","status","visibility","kind","remarks"]);
+	return this.insertRow('uac.sys_station', rcd, ["id","name","node","state","visibility","kind","remarks"]);
 };
 
 d2js.modify = function(rcd){
 	this.validate(rcd, 'modify');
 	this.actas('uac.sys_station.edit', 'uac.sys_station', rcd.id, rcd);
-	return this.updateRow('uac.sys_station', rcd, ["id","name","node","status","visibility","kind","remarks"]);
+	return this.updateRow('uac.sys_station', rcd, ["id","name","node","state","visibility","kind","remarks"]);
 }
 
 d2js.destroy = function(rcd){

@@ -1,8 +1,8 @@
 [% 	if(request._la == 'true'){
-		return out.printJson([{name : '查询系统角色代码表', code : 'sys_role_code.query', status : 'N'},
-		        {name : '增加系统角色代码表', code : 'sys_role_code.add', status : 'N', dependence : 'sys_role_code.query'}, 
-		        {name : '编辑系统角色代码表', code : 'sys_role_code.edit', status : 'N', dependence : 'sys_role_code.query'},
-		        {name : '删除系统角色代码表', code : 'sys_role_code.delete', status : 'N', dependence : 'sys_role_code.query'}]);
+		return out.printJson([{name : '查询系统角色代码表', code : 'sys_role_code.query', state : 'N'},
+		        {name : '增加系统角色代码表', code : 'sys_role_code.add', state : 'N', dependence : 'sys_role_code.query'}, 
+		        {name : '编辑系统角色代码表', code : 'sys_role_code.edit', state : 'N', dependence : 'sys_role_code.query'},
+		        {name : '删除系统角色代码表', code : 'sys_role_code.delete', state : 'N', dependence : 'sys_role_code.query'}]);
  	}
 	var anonymous = request.anonymous;
 	if(session.user == null && !anonymous){

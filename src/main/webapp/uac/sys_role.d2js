@@ -2,11 +2,11 @@
 d2js.fetch = function(params){
 	this.checkPrivilege("uac.sys_role.query");
 	var sql = this.nodeSql(params, findChildTypes('SYS_ROLE')) +
-			'select t.id,t.node,t.name,t.code,t.node_scope,t.role_level,t.status,t.remarks,nd.name node_name from uac.sys_role t, nd where t.node = nd.id ';
+			'select t.id,t.node,t.name,t.code,t.node_scope,t.role_level,t.state,t.remarks,nd.name node_name from uac.sys_role t, nd where t.node = nd.id ';
 	
 	if(params.name != null) sql += ' and strpos(t.name, :name) > 0';
 	
-	if(params.status != null) sql += ' and strpos(t.status, :status) > 0';
+	if(params.state != null) sql += ' and strpos(t.state, :state) > 0';
 	
 	sql += 'and t.role_level >= :role_level';
 	params.role_level = this.session.user.role.role_level; 
@@ -35,18 +35,18 @@ d2js.fetchDispatchedFunctions = function(params){
 			with rf as
 		     (select * from uac.sys_role_function rf where sys_role = :id),
 		    fn as
-		     (select f.name, f.id, f.status, f.code, f.parent_id, f.menu_index
+		     (select f.name, f.id, f.state, f.code, f.parent_id, f.menu_index
 		       from uac.sys_function f
 		       where id in (select sys_function from rf)
 		     connect by parent_id = prior id
 		       start with id=0),
 		    fn2 as (
-		    select f.name, f.id, f.status, f.code, f.parent_id, f.menu_index, null dependence, rf.DISPATCH_MODE, 'fun' type
+		    select f.name, f.id, f.state, f.code, f.parent_id, f.menu_index, null dependence, rf.DISPATCH_MODE, 'fun' type
 		      from rf, fn f
 		     where f.id = rf.sys_function
 		     ),
 		    sfn as (
-		     select sf.name, sf.id, sf.status, sf.code, sf.sys_function, sf.menu_index,
+		     select sf.name, sf.id, sf.state, sf.code, sf.sys_function, sf.menu_index,
 		            sf.dependence, rsf.DISPATCH_MODE, 'sub' type
 		       from uac.sub_function sf,
 		            (select * from uac.sys_role_sub_function rsf where rsf.sys_role = :id) rsf,
@@ -55,7 +55,7 @@ d2js.fetchDispatchedFunctions = function(params){
 		        and fn2.id = sf.sys_function
 		    ),
 		    sfn2 as (
-		     select sf.name, sf.id, sf.status, sf.code, sf.sys_function, sf.menu_index,
+		     select sf.name, sf.id, sf.state, sf.code, sf.sys_function, sf.menu_index,
 		            sf.dependence, nvl(sf.dispatch_mode, fn2.dispatch_mode),sf.type
 		     from sfn sf, fn2
 		     where sf.sys_function = fn2.id
@@ -71,17 +71,17 @@ d2js.fetchDispatchedFunctions = function(params){
 			 (SELECT * FROM uac.sys_role_function rf WHERE sys_role = :id),
 			fn AS
 			 (WITH RECURSIVE fn AS
-			     (SELECT f.name, f.id, f.status, f.code, f.parent_id, f.menu_index
+			     (SELECT f.name, f.id, f.state, f.code, f.parent_id, f.menu_index
 			       FROM uac.sys_function f
 			      WHERE id = 0
 			     UNION ALL
-			     SELECT f.name, f.id, f.status, f.code, f.parent_id, f.menu_index
+			     SELECT f.name, f.id, f.state, f.code, f.parent_id, f.menu_index
 			       FROM uac.sys_function f, fn
 			      WHERE f.parent_id = fn.id
 			        AND f.id IN (SELECT sys_function FROM rf))
 			    SELECT * FROM fn),
 			fn2 AS
-			 (SELECT f.name, f.id, f.status, f.code, f.parent_id, f.menu_index,
+			 (SELECT f.name, f.id, f.state, f.code, f.parent_id, f.menu_index,
 			         NULL ::VARCHAR(500) dependence, rf.dispatch_mode,
 			         'fun' ::VARCHAR(8) "type"
 			    FROM rf, fn f
@@ -89,7 +89,7 @@ d2js.fetchDispatchedFunctions = function(params){
 			rsf AS
 			 (SELECT * FROM sys_role_sub_function rsf WHERE rsf.sys_role = :id),
 			sfn AS
-			 (SELECT sf.name, sf.id, sf.status, sf.code, sf.sys_function, sf.menu_index,
+			 (SELECT sf.name, sf.id, sf.state, sf.code, sf.sys_function, sf.menu_index,
 			         sf.dependence, rsf.dispatch_mode, 'sub' ::VARCHAR(8) "type"
 			    FROM uac.sub_function sf
 			    LEFT OUTER JOIN rsf
@@ -97,7 +97,7 @@ d2js.fetchDispatchedFunctions = function(params){
 			    JOIN fn2
 			      ON fn2.id = sf.sys_function),
 			sfn2 AS
-			 (SELECT sf.name, sf.id, sf.status, sf.code, sf.sys_function, sf.menu_index,
+			 (SELECT sf.name, sf.id, sf.state, sf.code, sf.sys_function, sf.menu_index,
 			         sf.dependence, coalesce(sf.dispatch_mode, fn2.dispatch_mode),
 			         sf.type
 			    FROM sfn sf, fn2
@@ -116,25 +116,25 @@ d2js.fetchAllFunctions = function(params){
 	if(this.executor.isOracle()){
 		sql{.
 			with a as
-			 (select f.name, f.id, f.status, f.code, f.parent_id, null dependence, 'T' dispatch_mode,
+			 (select f.name, f.id, f.state, f.code, f.parent_id, null dependence, 'T' dispatch_mode,
 			         'fun' type
 			    from uac.sys_function f
 			   start with f.id = 0
 			  connect by parent_id = prior id
 			  union all
-			  select f.name, f.id, f.status, f.code, f.sys_function, f.dependence, 'T', 'sub'
+			  select f.name, f.id, f.state, f.code, f.sys_function, f.dependence, 'T', 'sub'
 			    from uac.sub_function f)
 			select a.* from a connect by a.parent_id = prior id start with id=0
 		.}
 	} else if(this.executor.isPostgreSQL()){
 		sql{.
 			WITH RECURSIVE a AS
-			 (SELECT f.name, f.id, f.status, f.code, f.parent_id, NULL dependence,
+			 (SELECT f.name, f.id, f.state, f.code, f.parent_id, NULL dependence,
 			         'T' dispatch_mode, 'fun' "type", ARRAY [ f.menu_index ] path
 			    FROM uac.sys_function f
 			   WHERE id = 0
 			  UNION ALL
-			  SELECT f.name, f.id, f.status, f.code, f.parent_id, NULL, 'T', 'fun',
+			  SELECT f.name, f.id, f.state, f.code, f.parent_id, NULL, 'T', 'fun',
 			         path || f.menu_index
 			    FROM uac.sys_function f, a
 			   WHERE f.parent_id = a.id),
@@ -142,11 +142,11 @@ d2js.fetchAllFunctions = function(params){
 			 (SELECT *
 			    FROM a
 			  UNION ALL
-			  SELECT f.name, f.id, f.status, f.code, f.sys_function, f.dependence, 'T',
+			  SELECT f.name, f.id, f.state, f.code, f.sys_function, f.dependence, 'T',
 			         'sub', path || f.menu_index
 			    FROM uac.sub_function f, a
 			   WHERE f.sys_function = a.id)
-			SELECT NAME, id, status, code, parent_id, dependence, dispatch_mode, TYPE
+			SELECT NAME, id, state, code, parent_id, dependence, dispatch_mode, TYPE
 			  FROM b
 			 ORDER BY path
 		.}
@@ -161,14 +161,14 @@ d2js.create = function(rcd){
 		name : [V.longest(100),V.uniqueInNode('uac.sys_role')],
 		code : [V.longest(100),V.uniqueInNode('uac.sys_role')],  
 		role_level : [V.longest(5)],		
-		status : [V.longest(1),V.inside(["N","P"])]  
+		state : [V.longest(1),V.inside(["N","P"])]  
 		
 	});	
 	
 	this.doTransaction(function(){
 		rcd.id = this.nextId("uac.SEQ_ENTITY");
 		this.actas('uac.sys_role.add', 'uac.sys_role', rcd.id, rcd);
-		this.insertRow('uac.sys_role', rcd, ["id","node","name","code","node_scope","role_level","status","remarks"]);
+		this.insertRow('uac.sys_role', rcd, ["id","node","name","code","node_scope","role_level","state","remarks"]);
 		this.updateDispatchedFunctions(rcd.dispatched_functions, rcd.id);
 	});		
 };
@@ -269,13 +269,13 @@ d2js.modify = function(rcd){
 		name : [V.longest(100),V.uniqueInNode('uac.sys_role')], 
 		code : [V.longest(100),V.uniqueInNode('uac.sys_role')],
 		role_level : [V.longest(5)],  
-		status : [V.longest(1),V.inside(["N","P"])]  
+		state : [V.longest(1),V.inside(["N","P"])]  
 		
 	});
 
 	this.doTransaction(function(){
 		this.actas('uac.sys_role.edit', 'uac.sys_role', rcd.id, rcd);
-		this.updateRow('uac.sys_role', rcd,  ["id","node","name","code","node_scope","role_level","status","remarks"]);
+		this.updateRow('uac.sys_role', rcd,  ["id","node","name","code","node_scope","role_level","state","remarks"]);
 		this.updateDispatchedFunctions(rcd.dispatched_functions, rcd.id);
 	});
 };
@@ -283,11 +283,11 @@ d2js.modify = function(rcd){
 // 提取公司可用角色
 d2js.fetchAvaliableRoles = function(params){
 	var sql = "select * from (" + this.nodeSql(params,findChildTypes('SYS_ROLE')) +
-			'select t.id,t.node,t.name,t.role_level,t.status, nd.name node_name \
+			'select t.id,t.node,t.name,t.role_level,t.state, nd.name node_name \
 				from uac.sys_role t, nd where t.node = nd.id and t.role_level >= :role_level'
 			+ ') a union all '
 			+ "select * from (" + this.nodeSql(params,findChildTypes('SYS_ROLE'),null, null, true) +
-			"select t.id,t.node,t.name,t.role_level,t.status, ndr.name node_name \
+			"select t.id,t.node,t.name,t.role_level,t.state, ndr.name node_name \
 			from uac.sys_role t, ndr where t.node = ndr.id and ndr.id <> :node and t.node_scope = 'U' and t.role_level >= :role_level) b";
 	
 	params.role_level = this.session.user.role.role_level;

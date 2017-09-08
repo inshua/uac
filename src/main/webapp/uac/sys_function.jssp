@@ -1,8 +1,8 @@
 [% 	if(request._la == 'true'){
-		return out.printJson([{name : '查询系统功能', code : 'uac.sys_function.query', status : 'N'},
-		        {name : '增加系统功能', code : 'uac.sys_function.add', status : 'N', dependence : 'uac.sys_function.query'}, 
-		        {name : '编辑系统功能', code : 'uac.sys_function.edit', status : 'N', dependence : 'uac.sys_function.query'},
-		        {name : '删除系统功能', code : 'uac.sys_function.delete', status : 'N', dependence : 'uac.sys_function.query'}]);
+		return out.printJson([{name : '查询系统功能', code : 'uac.sys_function.query', state : 'N'},
+		        {name : '增加系统功能', code : 'uac.sys_function.add', state : 'N', dependence : 'uac.sys_function.query'}, 
+		        {name : '编辑系统功能', code : 'uac.sys_function.edit', state : 'N', dependence : 'uac.sys_function.query'},
+		        {name : '删除系统功能', code : 'uac.sys_function.delete', state : 'N', dependence : 'uac.sys_function.query'}]);
  	}
 	var anonymous = request.anonymous;
 	if(session.user == null && !anonymous){
@@ -38,7 +38,7 @@
 		                        </div>              
 		                    </div>
 		
-		                    <div molecule="SearchFormSelectItem" col="status" text="状态：" dict="sys_function_status">                    
+		                    <div molecule="SearchFormSelectItem" col="state" text="状态：" dict="sys_function_state">                    
 		                    </div>           
 	                    </div>
 		                <div class="form-row btn-row">
@@ -60,7 +60,7 @@
 	    	                
 	    						<th molecule="Header" sortable="false" col="code" text="操作代码"></th>
 	    			 
-	    						<th molecule="Header" sortable="false" col="status" dict="sys_function_status" renderer="dict|std" text="状态"></th>
+	    						<th molecule="Header" sortable="false" col="state" dict="sys_function_state" renderer="dict|std" text="状态"></th>
 	    			 
 	    						<th molecule="Header" sortable="false" col="uri" text="URI"></th>
 	    						
@@ -108,7 +108,7 @@
 						</div>				
 		            </div>
 										
-					<div molecule="FormItem" col="status" text="状态：" dict="sys_function_status">
+					<div molecule="FormItem" col="state" text="状态：" dict="sys_function_state">
 		                <select molecule="Select"></select>
 		            </div>
 		            
@@ -129,7 +129,7 @@
 								<th data-t="name" renderer="std" collector-t="c|s">名称</th>
 								<th data-t="code" renderer="std" collector-t="c|s">代码</th>
 								<th data-t="dependence" renderer="std" collector-t="c|s">依赖操作</th>
-								<th data-t="status" dict="sys_function_status" renderer="dict|std" collector-t="c|s">状态</th>
+								<th data-t="state" dict="sys_function_state" renderer="dict|std" collector-t="c|s">状态</th>
 								</tr>
 						</thead>
 					</table>  	
@@ -148,7 +148,7 @@
 									<th data-t="name" renderer="std" collector-t="c|s">名称</th>
 									<th data-t="code" renderer="std" collector-t="c|s">代码</th>
 									<th data-t="dependence" renderer="std" collector-t="c|s">依赖操作</th>
-									<th data-t="status" dict="sys_function_status" renderer="dict|std" collector-t="c|s">状态</th>
+									<th data-t="state" dict="sys_function_state" renderer="dict|std" collector-t="c|s">状态</th>
 				 				</tr>
 							</thead>
 						  </table>  
@@ -160,7 +160,7 @@
 	    		
 	    		var dataset = d2js.dataset.create('ns_sys_function');
 				
-	    		Dicts.sys_function_status = {"N": "正常", "D": "禁用","H":"不可见（正常）"}
+	    		Dicts.sys_function_state = {"N": "正常", "D": "禁用","H":"不可见（正常）"}
 				Dicts.sys_function_open_mode = {"N": "无界面", "t": "在Ext TabPanel中开启", 
 				                                "W": "在新窗口开启", "M": "在新模式对话框开启", 
 				                                "w": "以Ext新窗口开启（仍在原页面）", 
@@ -171,7 +171,7 @@
 			    var table = dataset.addTable('sys_function', '../uac/sys_function.d2js');
 	    		
 	    		table.on('newrow', function(row){
-	    			row._set('status', 'N')._set('open_mode', 'C');
+	    			row._set('state', 'N')._set('open_mode', 'C');
 	    		})
 			  	
 			    table.on('load', function (error) { 

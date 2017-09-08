@@ -7,10 +7,10 @@
 %]
 [%= '[%' %]
  	if(request._la == 'true'){
-		return out.printJson([{name : '查询[%=tb.name%]', code : '[%=tb.code%].query', status : 'N'},
-		        {name : '增加[%=tb.name%]', code : '[%=tb.code%].add', status : 'N', dependence : '[%=tb.code%].query'}, 
-		        {name : '编辑[%=tb.name%]', code : '[%=tb.code%].edit', status : 'N', dependence : '[%=tb.code%].query'},
-		        {name : '删除[%=tb.name%]', code : '[%=tb.code%].delete', status : 'N', dependence : '[%=tb.code%].query'}]);
+		return out.printJson([{name : '查询[%=tb.name%]', code : '[%=tb.code%].query', state : 'N'},
+		        {name : '增加[%=tb.name%]', code : '[%=tb.code%].add', state : 'N', dependence : '[%=tb.code%].query'}, 
+		        {name : '编辑[%=tb.name%]', code : '[%=tb.code%].edit', state : 'N', dependence : '[%=tb.code%].query'},
+		        {name : '删除[%=tb.name%]', code : '[%=tb.code%].delete', state : 'N', dependence : '[%=tb.code%].query'}]);
  	}
 	var anonymous = request.anonymous;
 	if(session.user == null && !anonymous){

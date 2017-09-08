@@ -5,7 +5,7 @@ d2js.fetch=function(params){
 		    (SELECT t.id
 		    FROM uac.sys_station t, nd
 		    WHERE node = nd.id
-		            AND t.status = 'A' ), em AS 
+		            AND t.state = 'A' ), em AS 
 		    (SELECT t.*
 		    FROM uac.employee t, uac.employee_station est, st
 		    WHERE st.id = est.station

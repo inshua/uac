@@ -3,12 +3,12 @@ d2js.fetch = function(params){
 	params.parent_id = params.parent_id || 0;
 
 	if(this.executor.isOracle()){
-		var sql = 'select id, name, parent_id, menu_index, status, developer, code, uri, open_mode, icon_url, remarks from uac.sys_function ';
+		var sql = 'select id, name, parent_id, menu_index, state, developer, code, uri, open_mode, icon_url, remarks from uac.sys_function ';
 		
 		sql += ' where 1=1 ';
 	
 		if(params.name != null) sql += ' and instr(name, :name) > 0';
-		if(params.status != null) sql += ' and status = :status';
+		if(params.state != null) sql += ' and state = :state';
 		if(params.developer != null) sql += ' and developer = :developer';
 		
 		if(params.parent_id == 0)
@@ -18,15 +18,15 @@ d2js.fetch = function(params){
 		
 		sql += ' order siblings by menu_index'; 
 	} else if(this.executor.isPostgreSQL()){
-		if(params.name || params.status){
+		if(params.name || params.state){
 			sql{.
 				with recursive up as (select id, parent_id from uac.sys_function d 
 					where 1=1 
 						sql{.?(params.name)
 							and strpos(d.name, :name) > 0
 						.}
-						sql{.?(params.status)
-							and d.status = :status
+						sql{.?(params.state)
+							and d.state = :state
 						.}
 					union
 					select f.id, f.parent_id from uac.sys_function f, up 
@@ -39,7 +39,7 @@ d2js.fetch = function(params){
 					select d.*, path || d.menu_index from uac.sys_function d, all_ 
 					where d.parent_id = all_.id  
 				)
-				select id, name, parent_id, menu_index, status, developer, code, uri, open_mode, icon_url, remarks 
+				select id, name, parent_id, menu_index, state, developer, code, uri, open_mode, icon_url, remarks 
 				from all_ 
 				where id in (select id from up)
 				order by path		
@@ -54,7 +54,7 @@ d2js.fetch = function(params){
 						select d.*, path || d.menu_index from uac.sys_function d, all_ 
 						where d.parent_id = all_.id  
 					)
-					select id, name, parent_id, menu_index, status, developer, code, uri, open_mode, icon_url, remarks 
+					select id, name, parent_id, menu_index, state, developer, code, uri, open_mode, icon_url, remarks 
 					from all_ 				
 					order by path
 			.}	
@@ -69,7 +69,7 @@ d2js.exports.listAll=
 d2js.listAll = function(params, body, pageDef){
 
 	if(this.executor.isOracle()){
-		var sql = 'select id, name, parent_id, status, developer, code from uac.sys_function ';
+		var sql = 'select id, name, parent_id, state, developer, code from uac.sys_function ';
 	
 		sql += ' connect by parent_id = prior id ' ;
 		
@@ -82,7 +82,7 @@ d2js.listAll = function(params, body, pageDef){
 		var sql = 'with recursive p as (select *, array[menu_index] path from uac.sys_function where id = 0 ' 
 			+'union select d.*, path || d.menu_index from uac.sys_function d, p where d.parent_id = p.id ' 
 			+ (params.id != null && ' and d.id <> :id' || '')
-			+') select id, name, parent_id, status, developer, code from p order by path';
+			+') select id, name, parent_id, state, developer, code from p order by path';
 	}
 	
 	return this.query(sql, params);
@@ -90,7 +90,7 @@ d2js.listAll = function(params, body, pageDef){
 d2js.exports.listAction=
 d2js.listAction = function(params, body, pageDef){
 	sql{.
-		select id, name, status, code, dependence from uac.sub_function
+		select id, name, state, code, dependence from uac.sub_function
 			where sys_function=:id
 			order by menu_index
 	.} 
@@ -127,16 +127,16 @@ d2js.resetActionsInner = function(uri, sysFunction){
 		if(this.executor.isOracle()){
 			sql{.(sqlMerge)
 				MERGE INTO uac.sub_function USING dual ON ( sys_function=:sys_function and code = :code)
-				WHEN MATCHED THEN UPDATE SET menu_index = :menu_index, name = :name , status = :status, dependence = :dependence 
-				WHEN NOT MATCHED THEN INSERT (id, name,sys_function, menu_index, status, code, dependence)
-				    VALUES (uac.seq_nonentity.nextval, :name, :sys_function, :menu_index, :status, :code, :dependence)
+				WHEN MATCHED THEN UPDATE SET menu_index = :menu_index, name = :name , state = :state, dependence = :dependence 
+				WHEN NOT MATCHED THEN INSERT (id, name,sys_function, menu_index, state, code, dependence)
+				    VALUES (uac.seq_nonentity.nextval, :name, :sys_function, :menu_index, :state, :code, :dependence)
     		.}
 		} else if(this.executor.isPostgreSQL()){
 			sql{.(sqlMerge)
-				with nv(name,sys_function, menu_index, status, code, dependence) as (values(:name, :sys_function, :menu_index, :status, :code, :dependence)),
-				  upsert as (UPDATE sub_function f SET menu_index = :menu_index, name = :name , status = :status, dependence = :dependence WHERE sys_function=:sys_function and code = :code RETURNING f.*)
-				    insert into uac.sub_function(id, name,sys_function, menu_index, status, code, dependence)
-				       select nextval('uac.seq_nonentity'), name,sys_function, menu_index, status, code, dependence from nv
+				with nv(name,sys_function, menu_index, state, code, dependence) as (values(:name, :sys_function, :menu_index, :state, :code, :dependence)),
+				  upsert as (UPDATE sub_function f SET menu_index = :menu_index, name = :name , state = :state, dependence = :dependence WHERE sys_function=:sys_function and code = :code RETURNING f.*)
+				    insert into uac.sub_function(id, name,sys_function, menu_index, state, code, dependence)
+				       select nextval('uac.seq_nonentity'), name,sys_function, menu_index, state, code, dependence from nv
 				     where not exists(select 1 from upsert where upsert.code = nv.code and upsert.sys_function = nv.sys_function)
 			.}
 		}
@@ -167,7 +167,7 @@ d2js.create = function(rcd){
 		name : [V.notNull,V.longest(100),V.unique('uac.sys_function')],  
 		parent_id : [],
 		menu_index : [],  
-		status : [V.notNull,V.longest(1)],  
+		state : [V.notNull,V.longest(1)],  
 		developer : [],  
 		code : [V.notNull,V.longest(200),V.unique('uac.sys_function')],  
 		uri : [V.longest(200)], 
@@ -188,7 +188,7 @@ d2js.create = function(rcd){
 		logger.info('got menu_index ' + rcd.menu_index);
 	}
 	// logger.info('new sys_function ' + JSON.stringify(rcd));
-	this.insertRow('uac.sys_function', rcd, ["id","name","parent_id","menu_index","status","developer","code","uri","open_mode", "icon_url", "remarks"]);
+	this.insertRow('uac.sys_function', rcd, ["id","name","parent_id","menu_index","state","developer","code","uri","open_mode", "icon_url", "remarks"]);
 	
 	if(rcd.open_mode != 'P'){
 		this.resetActionsInner(rcd.uri, rcd.id);
@@ -206,7 +206,7 @@ d2js.modify = function(rcd){	// 菜单可能会出现同样的 menu_index：调�
 		name : [V.notNull,V.longest(100), V.unique('uac.sys_function')],  
 		parent_id : [],  
 		menu_index : [],  
-		status : [V.notNull,V.longest(1)],  
+		state : [V.notNull,V.longest(1)],  
 		developer : [],  
 		code : [V.notNull,V.longest(200),V.unique('uac.sys_function')],  
 		uri : [V.longest(200)],
@@ -234,7 +234,7 @@ d2js.modify = function(rcd){	// 菜单可能会出现同样的 menu_index：调�
 		}, this);	
 
 		logger.info('update sys_function ' + JSON.stringify(rcd)); 
-		this.updateRow('sys_function', rcd, ["id","name","parent_id","status","developer","code","uri","open_mode", "icon_url", "remarks"]);
+		this.updateRow('sys_function', rcd, ["id","name","parent_id","state","developer","code","uri","open_mode", "icon_url", "remarks"]);
 	});
 	if(rcd.open_mode != 'P'){
 		this.resetActionsInner(rcd.uri, rcd.id);
