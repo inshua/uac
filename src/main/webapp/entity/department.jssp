@@ -21,8 +21,8 @@
 		<div molecule-def='DepartmentManage'>
 		    <div molecule="TableList" table="ns_department,department" edit-dialog="ns_department-dialog" >
 		        <h1 class="page-title">部门管理</h1>
-		        <div class="search-bar">
-		            <form molecule="SearchForm" style="float: none;">
+		        <form molecule="SearchForm" style="float: none;">
+		        	<div class="search-bar">
 		                <div molecule="SearchFormItem" col="name" text="部门名称：">
 		                    <input type="text" molecule="Input">
 		                </div>
@@ -40,17 +40,16 @@
 		                </div>
 		            
 		                <button molecule="SearchButton" role="search">搜索</button>
-		            
-		            </form>
-		        </div>
-		        <div class="tool-bar">
-		            [% if(session.user.allowed['department.add']){ %] 
-		            <button molecule="AddButton" role="add">添加</button>
-		            [% } %]
-		            [% if(session.user.allowed['department.delete']){ %]                
-		            <button molecule="DelButton" role="delete">删除</button>
-		            [% } %]
-		        </div>
+			        </div>
+			        <div class="tool-bar">
+			            [% if(session.user.allowed['department.add']){ %] 
+			            <button molecule="AddButton" role="add">添加</button>
+			            [% } %]
+			            [% if(session.user.allowed['department.delete']){ %]                
+			            <button molecule="DelButton" role="delete">删除</button>
+			            [% } %]
+			        </div>
+		        </form>
 		        <div class="main-table">
 		            <div molecule="TableError"></div>
 		            <table id="grdMain" molecule="List" allow-remove= "[%= (session.user.allowed['department.delete']) %]">

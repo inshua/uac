@@ -5,7 +5,7 @@
  
  var anonymous =request.anonymous;
  if(session.user == null && !anonymous){ 
- return response.sendRedirect(website + 'index.jssp'); 
+ return response.sendRedirect(website + '/index.jssp'); 
  } %]
 <!DOCTYPE html>
 <html>
@@ -13,7 +13,7 @@
 <meta charset="UTF-8">
 <title>公司设置</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-[% this.includeJssp('../common/include_lib.jssp'); %]
+[% this.includeJssp('../common/include_lib.jssp', {pureBootstrap: true}); %]
 
 </head>
 <body>
@@ -22,8 +22,8 @@
 	
 			<div molecule="TableList" table="ns_company,company" edit-dialog="ns_company-dialog1">
 				<h1 class="page-title">公司信息</h1>
-				<div class="search-bar">
-					<form molecule="SearchForm" style="float:none;">
+				<form molecule="SearchForm" style="float:none;">
+					<div class="search-bar">
 						<div molecule="SearchFormItem" col="parent_id" text="上级公司：">
 							<div molecule="DropDownTree" table="ns_company,node" value-col="id" display-col="name" select="single" paging="false"
 								show-header="false" data="parent_id" data-width="200">
@@ -38,13 +38,13 @@
 						</div>
 						
 						<button molecule="SearchButton" role="search">搜索</button>
-					</form>
-				</div>
-	            <div class="tool-bar">
-		            [% if(session.user.allowed['company.add']){%]
-		            <button molecule="AddButton" role="add">添加</button>
-		            [% } %]
-	            </div>
+					</div>
+		            <div class="tool-bar">
+			            [% if(session.user.allowed['company.add']){%]
+			            <button molecule="AddButton" role="add">添加</button>
+			            [% } %]
+		            </div>
+				</form>
 				<div molecule="TableError"></div>
 	
 	            <div class="main-table">

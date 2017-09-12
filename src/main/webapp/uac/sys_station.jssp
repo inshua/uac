@@ -21,8 +21,8 @@
 		<div molecule-def='StationManage'>
 			<div molecule="TableList" table="ns_sys_station,sys_station" edit-dialog="ns_sys_station-dialog" >
 		        <h1 class="page-title">岗位管理</h1>
-		        <div class="search-bar">
-					<form molecule="SearchForm" style="float: none;">
+				<form molecule="SearchForm" style="float: none;">
+		        	<div class="search-bar">
 					    <div class="form-row">
 			                <div molecule="SearchFormItem" col="name" text="岗位名称：">
 			                    <input type="text" molecule="Input">
@@ -47,16 +47,16 @@
 			                <button molecule="SearchButton" role="search">搜索</button>
 			            </div>
 						
-					</form>
-				</div>
-				<div class="tool-bar">
-			        [% if(session.user.allowed['uac.sys_station.add']){ %] 
-			        <button molecule="AddButton" role="add">添加</button>
-			        [% } %]
-		            [% if(session.user.allowed['uac.sys_station.delete']){ %] 
-		            <button molecule="DelButton" role="delete">删除</button>
-		            [% } %]
-				</div>
+					</div>
+					<div class="tool-bar">
+				        [% if(session.user.allowed['uac.sys_station.add']){ %] 
+				        <button molecule="AddButton" role="add">添加</button>
+				        [% } %]
+			            [% if(session.user.allowed['uac.sys_station.delete']){ %] 
+			            <button molecule="DelButton" role="delete">删除</button>
+			            [% } %]
+					</div>
+				</form>
 				<div molecule="TableError"></div>
 				<div class="main-table">
 					<table id="grdMain" molecule="List" allow-remove="[%= session.user.allowed['uac.sys_station.delete'] %]" >

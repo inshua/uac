@@ -84,7 +84,7 @@ d2js.deleteNode = function(rcd){
 
 d2js.fetchById = function(params){
 	sql{.
-		select * from node where id = :id
+		select * from uac.node where id = :id
 	.}
 	
 	return this.query(sql,params);

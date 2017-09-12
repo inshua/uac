@@ -22,8 +22,8 @@
 	
 			<div molecule="TableList" table="ns_operate_log,operate_log">
 				<h1 class="page-title">操作日志信息</h1>
-				<div class="search-bar">
-					<form molecule="SearchForm" style="float: none;">
+				<form molecule="SearchForm" style="float: none;">
+					<div class="search-bar">
 						<div class="form-row">
 	    					<div molecule="SearchFormItem" col="person" text="操作人员：">
 	    						<input type="text" molecule="Input">
@@ -42,8 +42,8 @@
 						<div class="form-row btn-row">
 						   <button molecule="SearchButton" role="search">搜索</button>
 						</div>
-					</form>
-				</div>
+					</div>
+				</form>
 				
 				<div molecule="TableError"></div>
 	            <div class="main-table">

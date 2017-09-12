@@ -22,8 +22,8 @@
 	    <div molecule-def=SysFunction class="AFD">
 		    <div molecule="TableList" table="ns_sys_function,sys_function" edit-dialog="functionDialog" id="ParentSelect" paging=false>
 		        <h1 class="page-title">系统功能设置</h1>
-		        <div class="search-bar">
-	                <form molecule="SearchForm" style="float:none;">  
+	            <form molecule="SearchForm" style="float:none;">  
+		        	<div class="search-bar">
 	                    <div class="form-row">                                                
 		                    <div molecule="SearchFormItem" col="name" text="名称：">
 		                        <input type="text" molecule="Input">
@@ -44,13 +44,13 @@
 		                <div class="form-row btn-row">
 		                    <button molecule="SearchButton" role="search" >搜索</button>
 		                </div>
-	                </form>
-		        </div>
-		        <div class="tool-bar">
-	                [% if(session.user.allowed['uac.sys_function.add']){ %]                
-	                <button molecule="AddButton" role="add">新增</button>
-	                [% } %] 
-		        </div>
+			        </div>
+			        <div class="tool-bar">
+		                [% if(session.user.allowed['uac.sys_function.add']){ %]                
+		                <button molecule="AddButton" role="add">新增</button>
+		                [% } %] 
+			        </div>
+			    </form>
 		        <div molecule="TableError"></div>
 		        <div class="main-table">
 	    	        <table id="grdMain" molecule="Tree" checkable="true" select="single" allow-remove="[%= session.user.allowed['uac.sys_function.delete'] %]">

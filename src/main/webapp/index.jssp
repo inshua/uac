@@ -31,7 +31,6 @@
     %] 
     <script src="jslib/sha1.js"></script>
     <script src="jslib/jquery-1.10.2.js"></script>
-    <script src="jslib/json2.js"></script>
     <script>
         $(function () {
             var fixHeight = function (e) {

@@ -33,9 +33,8 @@
 	    	</div>
 		    <div molecule="TableList" table="ns_sys_role,sys_role" edit-dialog="roleDialog" id="ParentSelect">
 		        <h1 class="page-title">系统角色</h1>
-		        <div class="search-bar">
-		            <form molecule="SearchForm" style="float: none;">
-		            
+		        <form molecule="SearchForm" style="float: none;">
+		        	<div class="search-bar">
 		            	<div class="form-row">
 							<div molecule="SearchFormItem" col="node" text="所属单位：" >
 				            	 <div molecule="DropDownTree" table="ns_sys_role,all_company" value-col="id" display-col="name" autocomplete-col="name" select="single" 
@@ -56,18 +55,18 @@
 					  	</div>
 					  	<div class="form-row btn-row">
 					  	    <button molecule="SearchButton" role="search">搜索</button>
-					  	</div>         
-		            </form>
-		          
-		        </div>
-		        <div class="tool-bar">
-	                [% if(session.user.allowed['uac.sys_role.add']){ %]                
-	                <button molecule="AddButton" role="add">新增</button>
-	                [% } %]
-	                [% if(session.user.allowed['uac.sys_role.delete']){ %]                
-	                <button molecule="DelButton" role="delete">删除</button>
-	                [% } %]
-		        </div>
+					  	</div>
+	        		</div>
+					<div class="tool-bar">
+		                [% if(session.user.allowed['uac.sys_role.add']){ %]                
+		                <button molecule="AddButton" role="add">新增</button>
+		                [% } %]
+		                [% if(session.user.allowed['uac.sys_role.delete']){ %]                
+		                <button molecule="DelButton" role="delete">删除</button>
+		                [% } %]
+			        </div>         
+	            </form>
+		        
 		        <div molecule="TableError"></div>
 		        <div class="main-table">
 		        <table id="grdMain" molecule="List" checkable="true" select="single" allow-remove="[%= session.user.allowed['uac.sys_role.delete'] %]">

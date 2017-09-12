@@ -22,11 +22,9 @@
 	    <div molecule-def=Person>
 		    <div molecule="TableList" table="ns_person,person" edit-dialog="personDialog" id="ParentSelect">
 		        <h1 class="page-title">员工管理</h1>
-		        <div class="search-bar">
-		            <form molecule="SearchForm" style="float: none;">
-		            
+		        <form molecule="SearchForm" style="float: none;">
+		        	<div class="search-bar">
 		            	<div class="form-group">
-							
 							<div molecule="SearchFormItem" col="name" text="姓名：">
 		                    	<input type="text" molecule="Input">
 		                	</div>
@@ -42,18 +40,16 @@
 					  	</div>
 					  	
 		                <button molecule="SearchButton" role="search">搜索</button>
-		                        
-		            </form>
-		          
-		        </div>
-		        <div class="tool-bar">
-		            [% if(session.user.allowed['person.add']){ %]                
-		            <button molecule="AddButton" role="add">添加</button>
-		            [% } %]
-	                [% if(session.user.allowed['person.delete']){ %]                
-	                <button molecule="DelButton" role="delete">删除</button>
-	                [% } %]
-		        </div>
+			        </div>
+			        <div class="tool-bar">
+			            [% if(session.user.allowed['person.add']){ %]                
+			            <button molecule="AddButton" role="add">添加</button>
+			            [% } %]
+		                [% if(session.user.allowed['person.delete']){ %]                
+		                <button molecule="DelButton" role="delete">删除</button>
+		                [% } %]
+			        </div>
+		        </form>
 		        <div molecule="TableError"></div>
 		        <div class="main-table">
 			        <table id="grdMain" molecule="List" checkable="true" select="single" allow-remove="[%= session.user.allowed['person.delete'] %]">
