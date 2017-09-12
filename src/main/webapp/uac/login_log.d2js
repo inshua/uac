@@ -1,7 +1,7 @@
 d2js.fetch = function(params){
 	this.checkPrivilege("uac.login_log.query");
 	sql{.
-		select p.name p_name,l.* from login_log l,person p where l.person = p.id
+		select p.name p_name,l.* from uac.login_log l, uac.person p where l.person = p.id
 	
 		sql{.?(params.name)
 			and strpos(p.name,:name) > 0

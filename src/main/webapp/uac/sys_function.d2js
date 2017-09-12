@@ -134,7 +134,7 @@ d2js.resetActionsInner = function(uri, sysFunction){
 		} else if(this.executor.isPostgreSQL()){
 			sql{.(sqlMerge)
 				with nv(name,sys_function, menu_index, state, code, dependence) as (values(:name, :sys_function, :menu_index, :state, :code, :dependence)),
-				  upsert as (UPDATE sub_function f SET menu_index = :menu_index, name = :name , state = :state, dependence = :dependence WHERE sys_function=:sys_function and code = :code RETURNING f.*)
+				  upsert as (UPDATE uac.sub_function f SET menu_index = :menu_index, name = :name , state = :state, dependence = :dependence WHERE sys_function=:sys_function and code = :code RETURNING f.*)
 				    insert into uac.sub_function(id, name,sys_function, menu_index, state, code, dependence)
 				       select nextval('uac.seq_nonentity'), name,sys_function, menu_index, state, code, dependence from nv
 				     where not exists(select 1 from upsert where upsert.code = nv.code and upsert.sys_function = nv.sys_function)

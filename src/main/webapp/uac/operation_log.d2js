@@ -1,7 +1,7 @@
 d2js.fetch = function(params){
 	this.checkPrivilege("uac.operation_log.query");
 	sql{.
-		select p.name person_name,sf.name function_code_name, ol.apply_table, ol.start_time,ol.result from person p, operation_log ol, sub_function sf  
+		select p.name person_name,sf.name function_code_name, ol.apply_table, ol.start_time,ol.result from uac.person p, uac.operation_log ol, uac.sub_function sf  
 		where p.id = ol.person and sf.code = ol.function_code
 	
 		sql{.?(params.person)
