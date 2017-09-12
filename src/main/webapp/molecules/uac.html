@@ -1,0 +1,67 @@
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<title>d2js</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link href="../jslib/bootstrap-3.3.4/css/bootstrap.css" rel="stylesheet" media="screen">
+	<script src="../jslib/jquery-3.2.1.js"></script>
+	<script src="../jslib/bootstrap-3.3.4/js/bootstrap.min.js"></script>
+
+	<script src="../jslib/date.js/Date.js"></script>
+
+	<script src="../jslib/d2js/dataset.js"></script>
+	<script src="../jslib/d2js/entity-map.js"></script>
+	<script src="../jslib/d2js/render.js"></script>
+	<script src="../jslib/d2js/renderers.js"></script>
+	<script src="../jslib/d2js/collector.js"></script>
+	<script src="../jslib/d2js/pipelines.js"></script>
+
+	<script src="../jslib/d2js/bootstrap-renderers.js"></script>
+
+	<script src="../jslib/molecule.js"></script>
+
+
+</head>
+
+<body>
+	<template>
+
+		 <!-- 删除按钮, 放在 form 里   -->
+	    <button molecule-def="DelButton" type="button" class="btn btn-default"></button>
+	    <script molecule-for="DelButton" constructor>
+            var table = this.$el.closest('[table]').attr('table');
+            var btn = this.$el;
+            var willDeleteRows = null;
+            btn.on('click', function(){
+                var tl = $(this).closest('[molecule-obj=TableList]');
+
+                var th = tl.find('thead>tr>th[molecule-obj=CheckHeader]');
+                var col = th.attr('col');
+                var checked = th.molecule().checked();
+                var t = d2js.dataset.getTable(table);
+                willDeleteRows = checked.map(function(c){return t.find(col,c)}).filter(function(r){return r});
+                if(willDeleteRows.length == 0){
+                    $('#my-no-select-modal').modal('show');
+                } else {
+                	$('#my-del-modal #delP').text('所选 ' + willDeleteRows.length + ' 行记录将被删除，该操作无法撤销，请点击[确定]按钮继续');
+                	$('#my-del-modal').modal('show').find('#del-btn').off('click').on('click', function () {
+                        var t = d2js.dataset.getTable(table);
+                        willDeleteRows.forEach(function(row){ row._remove(); });
+                        t.submit(function(error){
+                            $('#my-del-modal').modal('hide');
+                            if (!error) {
+                                this.reload();
+                            } else {
+                                d2js.render();
+                            }
+                        })
+                	});
+                }
+
+           });         
+	    </script>
+	</template>
+</body>
+</html>

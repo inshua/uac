@@ -491,7 +491,7 @@ d2js.Entity.prototype._set = function(attr, newValue) {
     if (this._state == 'phantom') throw new Error('cant set value at phantom entity');
 
     let isMappedOject = attr in this._meta.map;
-    newValue = (newValue == null ? null : newValue);
+    newValue = (newValue == null || newValue === '' ? null : newValue);
     if (isMappedOject) {
         return this._setMappedAttribute(attr, newValue);
     } else {
@@ -598,6 +598,10 @@ d2js.Entity.prototype._toRaw = function(values) {
  */
 d2js.Entity.prototype.toString = function() {
     return `(${this._meta.name} ${JSON.stringify(this._toRaw())})`
+}
+
+d2js.Entity.prototype.toJSON = function(){
+	return JSON.stringify(this._toRaw());
 }
 
 /**
@@ -839,6 +843,12 @@ d2js.List.prototype.setArray = function(arr, state = 'new') {
         }
     }
     return this;
+}
+
+d2js.List.prototype.find = function(attr, value){
+	return Array.prototype.find.call(this, function(item){
+		return item[attr] == value;
+	});
 }
 
 d2js.List.prototype.toString = function() {

@@ -20,6 +20,7 @@
     <molecule src="[%= website %]/molecules/bootstrap-basic.html"></molecule>
     <molecule src="[%= website %]/molecules/bootstrap-tree.html"></molecule>
     <molecule src="[%= website %]/molecules/bootstrap-trigger.html"></molecule>
+    <molecule src="[%= website %]/molecules/uac.html"></molecule>
 
     <script src="../jslib/molecule.js"></script>
     
