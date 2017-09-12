@@ -18,6 +18,7 @@
 	
 	<patternset id="molecules">
 		<include name="**/molecules/*.html" />
+		<include name="**/molecules/*.js" />
 		<exclude name="**/molecules/upgrade.html"/>
 		<exclude name="**/molecules/upgrade.md"/>
 		<exclude name="**/molecules/blocks.html"/>
@@ -40,6 +41,42 @@
 		</unzip>
 		
 		<delete file="${file.d2js.zip}" />
+		<copydir src="${dir.temp}/d2js-${d2js.branch}/WebContent/jslib/" dest="${dir.web.jslib}" />
+		<copydir src="${dir.temp}/d2js-${d2js.branch}/WebContent/WEB-INF/jslib/" dest="${dir.server.jslib}" />
+		<copy file="${dir.temp}/d2js-${d2js.branch}/WebContent/WEB-INF/lib/org.siphon.d2js.jar" todir="${dir.server.lib}" />
+		<copydir src="${dir.temp}/d2js-${d2js.branch}/WebContent/molecules/" dest="${dir.web.molecule}" />
+		
+		<delete dir="${dir.temp}" />
+	</target>
+	
+	
+	<patternset id="uac">
+		<include name="**/entity/*" />
+		<include name="**/uac/*" />
+		<exclude name="**/login.d2js"/>
+	</patternset>
+
+	<target name="update-uac" >
+		<property name="file.uac.zip" value="${dir.temp}/org.siphon.uac.zip" />
+		<mkdir dir="${dir.temp}" />
+
+		<get src="https://codeload.github.com/inshua/uac/zip/${uac.branch}" dest="${file.uac.zip}" />
+		
+		<delete dir="${dir.temp}/d2js-${d2js.branch}"></delete>
+		
+		<unzip dest="${dir.temp}" src="${file.uac.zip}">
+			<patternset refid="not-web-content" />
+		</unzip>
+		
+		<unzip dest="${dir.temp}" src="${file.uac.zip}">
+			<patternset refid="molecules"></patternset>
+		</unzip>
+		
+		<unzip dest="${dir.temp}" src="${file.uac.zip}">
+			<patternset refid="uac"></patternset>
+		</unzip>
+		
+		<delete file="${file.uac.zip}" />
 		<copydir src="${dir.temp}/d2js-${d2js.branch}/WebContent/jslib/" dest="${dir.web.jslib}" />
 		<copydir src="${dir.temp}/d2js-${d2js.branch}/WebContent/WEB-INF/jslib/" dest="${dir.server.jslib}" />
 		<copy file="${dir.temp}/d2js-${d2js.branch}/WebContent/WEB-INF/lib/org.siphon.d2js.jar" todir="${dir.server.lib}" />
