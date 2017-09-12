@@ -1,5 +1,5 @@
 <!-- This is just an additional tools after we use a IDE env. -->
-<project name="org.siphon.d2js" basedir="." default="update-d2js">
+<project name="org.siphon.d2js" basedir="." default="update-uac">
 	<property file="build.properties" />
 	
 	<patternset id="not-web-content">
@@ -62,7 +62,7 @@
 
 		<get src="https://codeload.github.com/inshua/uac/zip/${uac.branch}" dest="${file.uac.zip}" />
 		
-		<delete dir="${dir.temp}/d2js-${d2js.branch}"></delete>
+		<delete dir="${dir.temp}/uac-${uac.branch}"></delete>
 		
 		<unzip dest="${dir.temp}" src="${file.uac.zip}">
 			<patternset refid="not-web-content" />
@@ -77,10 +77,13 @@
 		</unzip>
 		
 		<delete file="${file.uac.zip}" />
-		<copydir src="${dir.temp}/d2js-${d2js.branch}/WebContent/jslib/" dest="${dir.web.jslib}" />
-		<copydir src="${dir.temp}/d2js-${d2js.branch}/WebContent/WEB-INF/jslib/" dest="${dir.server.jslib}" />
-		<copy file="${dir.temp}/d2js-${d2js.branch}/WebContent/WEB-INF/lib/org.siphon.d2js.jar" todir="${dir.server.lib}" />
-		<copydir src="${dir.temp}/d2js-${d2js.branch}/WebContent/molecules/" dest="${dir.web.molecule}" />
+		<copydir src="${dir.temp}/uac-${uac.branch}/src/main/webapp/jslib/" dest="${dir.web.jslib}" />
+		<copydir src="${dir.temp}/uac-${uac.branch}/src/main/webapp/WEB-INF/jslib/" dest="${dir.server.jslib}" />
+		<copy file="${dir.temp}/uac-${uac.branch}/src/main/webapp/WEB-INF/lib/org.siphon.d2js.jar" todir="${dir.server.lib}" />
+		<copydir src="${dir.temp}/uac-${uac.branch}/src/main/webapp/molecules/" dest="${dir.web.molecule}" />
+		<copydir src="${dir.temp}/uac-${uac.branch}/src/main/webapp/entity/" dest="${dir.web}/entity/" />
+		<copydir src="${dir.temp}/uac-${uac.branch}/src/main/webapp/uac/" dest="${dir.web}/uac/" />
+		<copyfile src="${dir.temp}/uac-${uac.branch}/src/main/webapp/login.d2js" dest="${dir.web}/login.d2js" />
 		
 		<delete dir="${dir.temp}" />
 	</target>
