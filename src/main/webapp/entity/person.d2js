@@ -7,7 +7,7 @@ d2js.createPerson = function(rcd){
 		tel : [V.longest(20),],  
 		mobile : [V.longest(20),],  
 		wechat : [V.longest(40),],  
-		username : [V.longest(40), V.unique('person', null, null, true)],  
+		username : [V.longest(40), V.unique('uac.person', null, null, true)],  
 		password : [V.longest(40),],  
 	});
 	
@@ -25,7 +25,7 @@ d2js.createPerson = function(rcd){
 		flds.push("password");
 	}
 	
-	this.insertRow('person', rcd, flds);
+	this.insertRow('uac.person', rcd, flds);
 	return rcd;		
 };
 
@@ -38,7 +38,7 @@ d2js.modifyPerson = function(rcd){
 		tel : [V.longest(20),],  
 		mobile : [V.longest(20),],  
 		wechat : [V.longest(40),],  
-		username : [V.longest(40), V.unique('person', null, null, true)],  
+		username : [V.longest(40), V.unique('uac.person', null, null, true)],  
 		password : [V.longest(40),],  
 		
 	});
@@ -58,7 +58,7 @@ d2js.modifyPerson = function(rcd){
 };
 
 d2js.findExistPerson = function(params){
-	var sql = 'select id,name,photo,nationality,address,tel,birth,mobile,email,wechat,username from person where 1=1';
+	var sql = 'select id,name,photo,nationality,address,tel,birth,mobile,email,wechat,username from uac.person where 1=1';
 	
 	var attrs = ['username', 'email', 'mobile', 'wechat'];
 	var count = 0;
@@ -86,12 +86,12 @@ d2js.findRoleByCode = function(node, roleCode){
 		"with recursive nd as (\n" +
 		"  select * from node where id = :node \n" + 
 		"  union\n" + 
-		"  select node.* from node, nd where node.id = nd.parent_id\n" + 
+		"  select node.* from uac.node, nd where node.id = nd.parent_id\n" + 
 		"),\n" + 
 		"a as (\n" + 
-		"select * from sys_role where node in (select id from nd) and code = :code and node_scope = 'U'\n" + 
+		"select * from uac.sys_role where node in (select id from nd) and code = :code and node_scope = 'U'\n" + 
 		")\n" + 
-		"select * from sys_role where node = :node and code = :code \n" + 
+		"select * from uac.sys_role where node = :node and code = :code \n" + 
 		"union\n" + 
 		"select * from a";
 	
@@ -178,8 +178,7 @@ d2js.destroyPerson = function(params, rcd){
 
 
 d2js.fetch=function(params){
-     logger.error("hubin" + params.employeeNo );
-		sql{.
+	sql{.
 		select em.id id,em.employee_no, em.state,em.nodes,em.sys_stations,
 			pe.id person_id,pe.password,pe.name,pe.address,pe.tel,pe.mobile,
 			pe.wechat,pe.username,pe.email,pe.birth,pe.gender,pe.id_card, 
@@ -265,7 +264,6 @@ d2js.fetch=function(params){
 	.}
 	
 	sql = this.appendSort(sql, params._sorts);
-	logger.error('account exist ');
 	return this.query(this.nodeSql(params, findAncientTypes('PERSON')) + sql, params,params._page);
 
 };
@@ -281,10 +279,10 @@ d2js.create = function(rcd){
 		name : [V.notNull,V.longest(200),],  
 		address : [V.longest(200),],  
 		tel : [V.reg(/^[0-9]{3}[-]?[0-9]{1,12}$/,'不符合指定的格式')],     
-		mobile : [V.reg(/^[0-9]{3,20}$/,'不符合指定的格式'),V.personUnique('person')],  
-		wechat : [V.longest(40),V.personUnique('person')],  
-		employee_no : [V.notNull,V.longest(40), V.personUnique('person')],  
-		email:[V.email,V.personUnique('person')]
+		mobile : [V.reg(/^[0-9]{3,20}$/,'不符合指定的格式'),V.personUnique('uac.person')],  
+		wechat : [V.longest(40),V.personUnique('uac.person')],  
+		employee_no : [V.notNull,V.longest(40), V.personUnique('uac.person')],  
+		email:[V.email,V.personUnique('uac.person')]
 	});
 	if(rcd.nationality instanceof Array){
 		rcd.nationality = $ARRAY('varchar', rcd.nationality);
@@ -292,7 +290,7 @@ d2js.create = function(rcd){
 		rcd.nationality = $ARRAY('varchar', [rcd.nationality]);
 	}
 	
-	rcd.id = this.nextId("seq_entity");
+	rcd.id = this.nextId("uac.seq_entity");
 	this.actas('person.add', 'person', rcd.id, rcd);
 	
 	
@@ -300,7 +298,7 @@ d2js.create = function(rcd){
 	if(rcd.password && rcd.password.length){
 		flds.push("password");
 	}
-	this.insertRow('person', rcd, flds);
+	this.insertRow('uac.person', rcd, flds);
 
 	return rcd.id;		
 };
@@ -314,10 +312,10 @@ d2js.modify = function(rcd){
 		name : [V.notNull,V.longest(200),],  
 		address : [V.longest(200),],  
 		tel : [V.reg(/^[0-9]{3}[-]?[0-9]{1,12}$/,'不符合指定的格式')],     
-		mobile : [V.reg(/^[0-9]{3,20}$/,'不符合指定的格式'),V.personUnique('person')],  
-		wechat : [V.longest(40),V.personUnique('person')],  
-		employee_no : [V.notNull,V.longest(40), V.personUnique('person')],  
-		email:[V.email,V.personUnique('person')]
+		mobile : [V.reg(/^[0-9]{3,20}$/,'不符合指定的格式'),V.personUnique('uac.person')],  
+		wechat : [V.longest(40),V.personUnique('uac.person')],  
+		employee_no : [V.notNull,V.longest(40), V.personUnique('uac.person')],  
+		email:[V.email,V.personUnique('uac.person')]
 	});
 	if(rcd.nationality instanceof Array){
 		rcd.nationality = $ARRAY('varchar', rcd.nationality);
@@ -331,7 +329,7 @@ d2js.modify = function(rcd){
 	}
 	
 	//this.actas('person.edit', 'person', rcd.id, rcd);
-	this.updateRow('person', rcd, flds);
+	this.updateRow('uac.person', rcd, flds);
 	
 };
 

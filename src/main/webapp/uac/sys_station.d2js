@@ -40,7 +40,7 @@ d2js.validate = function(rcd, action){
 
 d2js.create = function(rcd){
 	this.validate(rcd, 'create');
-	rcd.id = this.nextId("sys_station_id_seq");
+	rcd.id = this.nextId("uac.sys_station_id_seq");
 	
 	this.session.sys_station_id = rcd.id;
 	

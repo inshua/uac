@@ -43,8 +43,8 @@ d2js.fetch=function(params){
 		select em.id id,em.employee_no, em.state,em.nodes,em.sys_stations,
 			pe.id person_id,pe.password,pe.name,pe.address,pe.tel,pe.mobile,pe.tag,pe.photo,
 			pe.wechat,pe.username,pe.email,pe.birth,pe.gender,pe.id_card,
-			array_to_string(array(select name from node where id = any(em.nodes)), ',') node_names
-		from employee em, person pe where pe.id = em.person and em.state != 'N'
+			array_to_string(array(select name from uac.node where id = any(em.nodes)), ',') node_names
+		from uac.employee em, uac.person pe where pe.id = em.person and em.state != 'N'
 		and exists (select * from nd where id = any(em.nodes))
 	
 		sql{.?(params.name)
@@ -67,7 +67,7 @@ d2js.fetch=function(params){
 
 d2js.modify = function(rcd){
 	this.doTransaction(function(){
-		this.updateRow('employee',rcd,['id','employee_no','state']);
+		this.updateRow('uac.employee',rcd,['id','employee_no','state']);
 		this.callD2js("person.d2js","modify",rcd);
 	});
 };
@@ -91,10 +91,10 @@ d2js.create = function(rcd){
 	
 	this.doTransaction(function(){
 		rcd.person=this.callD2js("person.d2js","create",rcd);
-		rcd.id = this.nextId("employee_id_seq1");
+		rcd.id = this.nextId("uac.employee_id_seq1");
 		this.session.employeeid = rcd.id;
 		
-		this.insertRow('employee', rcd, ['id','employee_no','state','person']);
+		this.insertRow('uac.employee', rcd, ['id','employee_no','state','person']);
 	});
 	
 
@@ -111,8 +111,8 @@ d2js.getNodesOfStations = function(stations){
 d2js.destroy = function(rcd){
 //	this.actas('person.delete', 'person_station', rcd.id, rcd);
 	this.doTransaction(function(){
-		this.updateRow('employee',{'id':rcd.id,'nodes':null,'sys_stations':null});
-		this.deleteRows('employee_station',{'employee':rcd.id});
+		this.updateRow('uac.employee',{'id':rcd.id,'nodes':null,'sys_stations':null});
+		this.deleteRows('uac.employee_station',{'employee':rcd.id});
 	});
 	
 };

@@ -2,14 +2,14 @@ d2js.fetch = function(params){
 	this.checkPrivilege('department.query');
 	sql{.
 		WITH recursive p as(
-		     select node.* from node where node.type='DEPT'
+		     select node.* from uac.node where node.type='DEPT'
 		     sql{.?(params.name)
 		     	and strpos(node.name,:name) >0
 		     .}
 		     sql{.?(params.parent_id)
 		     	and node.parent_id = :parent_id
 		     .}
-		)select n.name node_name,p.* from node n ,p where n.id = p.parent_id
+		)select n.name node_name,p.* from uac.node n ,p where n.id = p.parent_id
 	.}
 	return this.query(sql,params,params._page);
 }
@@ -33,7 +33,7 @@ d2js.validate = function(rcd, action){
 
 d2js.create = function(rcd){
 	this.validate(rcd, 'create')
-	rcd.id = this.nextId("node_id_seq");
+	rcd.id = this.nextId("uac.node_id_seq");
 	rcd.type ="DEPT";
 	this.actas('department.add', 'uac.node', rcd.id, rcd);
 	return this.insertRow('uac.node', rcd, ["id","name","parent_id","type","def"]);
