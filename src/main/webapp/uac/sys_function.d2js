@@ -218,7 +218,7 @@ d2js.modify = function(rcd){	// 菜单可能会出现同样的 menu_index：调�
 //	this.actas('sys_function.edit', 'sys_function', rcd.id, rcd);
 	
 	this.doTransaction(function(){
-		var siblings = this.query("select id, menu_index, name from sys_function where parent_id=:parent_id and id <> :id order by menu_index", rcd).rows;
+		var siblings = this.query("select id, menu_index, name from uac.sys_function where parent_id=:parent_id and id <> :id order by menu_index", rcd).rows;
 		siblings.splice(rcd.menu_index, 0, rcd);
 		
 //		var arr = [];
@@ -234,7 +234,7 @@ d2js.modify = function(rcd){	// 菜单可能会出现同样的 menu_index：调�
 		}, this);	
 
 		logger.info('update sys_function ' + JSON.stringify(rcd)); 
-		this.updateRow('sys_function', rcd, ["id","name","parent_id","state","developer","code","uri","open_mode", "icon_url", "remarks"]);
+		this.updateRow('uac.sys_function', rcd, ["id","name","parent_id","state","developer","code","uri","open_mode", "icon_url", "remarks"]);
 	});
 	if(rcd.open_mode != 'P'){
 		this.resetActionsInner(rcd.uri, rcd.id);
