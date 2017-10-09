@@ -220,12 +220,16 @@ V.uniqueInNode = function(table, tableField, ignoreCase){
 			if(v==null||v=='') return;
 			var pk = 'id';
 			fld = tableField || fld;
-			var sql = 'select 1 from uac.node where parent_id = ? and ' + fld + ' = ?';
+			
+			var nodeFld = 'node';
+			if(table != 'uac.node') nodeFld = 'node';
+			
+			var sql = 'select 1 from ' + table + ' where ' + nodeFld + ' = ? and ' + fld + ' = ?';
 			if(ignoreCase){
 				if(v != null) v = v.toUpperCase();
-				sql = 'select 1 from uac.node where parent_id = ? and upper(' + fld + ') = ?';
+				sql = 'select 1 from ' + table + ' where ' + nodeFld + ' = ? and upper(' + fld + ') = ?';
 			}
-			var args = [rcd.parent_id, v]
+			var args = [rcd[nodeFld], v]
 			if(rcd.id != null){
 				sql += ' and id <> ?';
 				args.push(rcd.id);

@@ -1,17 +1,26 @@
 
 d2js.fetch = function(params){
 	this.checkPrivilege("uac.sys_role.query");
-	var sql = this.nodeSql(params, findChildTypes('SYS_ROLE')) +
-			'select t.id,t.node,t.name,t.code,t.node_scope,t.role_level,t.state,t.remarks,nd.name node_name from uac.sys_role t, nd where t.node = nd.id ';
 	
-	if(params.name != null) sql += ' and strpos(t.name, :name) > 0';
+	params.node = params.node || this.session.user.node.id;
 	
-	if(params.state != null) sql += ' and strpos(t.state, :state) > 0';
+	sql{.
+		select t.id,t.node,t.name,t.code,t.node_scope,t.role_level,t.state,t.remarks,nd.name node_name from uac.sys_role t, 
+		uac.node nd 
+		where t.node = nd.id and (nd.id = :node or nd.path @> array[:node])
+		
+		sql{.?(params.name)
+				and strpos(t.name, :name) > 0
+		.}
+		sql{.?(params.state)
+				and t.state = :state
+		.}
+		and t.role_level >= :role_level
+	.}
 	
-	sql += 'and t.role_level >= :role_level';
 	params.role_level = this.session.user.role.role_level; 
 	
-	sql = this.appendSort(sql, params._sorts);
+	sql = this.orderBy(sql, params._sorts, {name: 'asc'});
 	
 	return this.query(sql, params, params._page);
 };

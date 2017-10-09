@@ -15,7 +15,7 @@
     <title>系统角色</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    [% this.includeJssp('../common/include_lib.jssp'); %]  
+    [% this.includeJssp('../common/include_lib.jssp', {pureBootstrap: true}); %]  
     
 </head>
 <body>
@@ -176,7 +176,7 @@
 			    allCompanys.on('load', function (error) { 
 			    	$el.render(dataset); 
 			    });
-			    allCompanys.load({_m:'listAll'});    
+			    allCompanys.load({_m:'listAll',"types": [%~ findAncientTypes('SYS_ROLE') %]});
 			    
 			    var functions=dataset.addTable('detail_function', '../uac/sys_role.d2js');
 			    functions.on('load',function(error){
