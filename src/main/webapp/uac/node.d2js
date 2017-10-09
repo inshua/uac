@@ -5,7 +5,7 @@
 d2js.exports.listAll = 
 d2js.listAll = function(params, body, pageDef){
 	sql{.
-		select id, name, type from uac.node node 
+		select id, name, type, parent_id from uac.node node 
 		where (node.id = :node OR node.path @> ARRAY[:node]) and type = any(:types)
 		order by path, name
 	.}
@@ -40,13 +40,15 @@ d2js.validate = function(rcd, action){
  * 			})
  * 		}
  */ 
-d2js.createNode = d2js.insertNode = function(rcd, type){
+d2js.createNode = d2js.insertNode = function(rcd, type, typeInAction){
+	typeInAction = typeInAction || type.toLowerCase();
+	
 	this.validate(rcd, 'add')
 	
 	rcd.type = (rcd.type || type).toUpperCase();
 	rcd.id = this.nextId("uac.node_id_seq");
 	
-	this.actas(rcd.type.toLowerCase() + '.add', 'uac.node', rcd.id, rcd);
+	this.actas(typeInAction + '.add', 'uac.node', rcd.id, rcd);
 	
 	sql{.
 		with recursive n as (
@@ -65,9 +67,10 @@ d2js.createNode = d2js.insertNode = function(rcd, type){
 /*
  * 同样放在事务中。
  */
-d2js.updateNode = function(rcd){
+d2js.updateNode = function(rcd, typeInAction){
+	typeInAction = typeInAction || rcd.type.toLowerCase()
 	this.validate(rcd, 'edit')
-	this.actas(rcd.type.toLowerCase() + '.edit', 'uac.node', rcd.id, rcd);
+	this.actas(typeInAction + '.edit', 'uac.node', rcd.id, rcd);
 	this.updateRow('uac.node', rcd, ["id","parent_id","name", 'def']);
 	if(rcd._origin && rcd._origin.parent_id == rcd.parent_id){
 		// pass
@@ -76,6 +79,7 @@ d2js.updateNode = function(rcd){
 	}
 };
 
+// 重置节点及其子节点的 path 字段
 d2js.resetNodePath = function(node){
 	sql{.
 		with recursive n as (
@@ -100,8 +104,9 @@ d2js.resetNodePath = function(node){
 /**
  * 可放于事务中。如为外键已设置 cascade delete 也可单独调用。
  */
-d2js.deleteNode = function(rcd){
-	this.checkPrivilege(rcd.type.toLowerCase() + ".delete");
+d2js.deleteNode = function(rcd, typeInAction){
+	typeInAction = typeInAction || rcd.type.toLowerCase()
+	this.checkPrivilege(typeInAction + ".delete");
 	this.deleteRow('uac.node', rcd);
 };
 

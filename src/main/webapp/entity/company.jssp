@@ -124,7 +124,7 @@
 				node.on('load', function(error) {
 					$el.render(dataset);
 				});
-				node.load({_m:'listAll',"types": [%~ findAncientTypesAnd('COMPANY') %]});
+				node.load({_m:'listAll',"types": [%~ findAncientTypes('COMPANY') %]});
 				
 				var table1 = dataset.addTable('node_without_curr','../entity/company.d2js');
 				$(function() {

@@ -2,7 +2,6 @@ d2js.mixin('../uac/node.d2js');
 
 d2js.fetch = function(params){
 	this.checkPrivilege("company.query");
-	params.nodeProperty = 'parent_id';
 	
 	Object.assign(params, 
 			{types: $ARRAY('varchar', findAncientTypesAnd('COMPANY')), 
@@ -79,7 +78,10 @@ V.uniqueCompanyInNode = function(table, tableField, primaryDesc, ignoreCase){
 			if(v == null || v === '') return;
 			
 			sql{.
-				select * from node where parent_id = :parent_id and name = :name
+				select * from node where parent_id = :parent_id and name = :name 
+				sql{.?(rcd.id != null)
+						and id <> :id
+				.}
 			.}	
 			var r = d2js.query(sql, rcd);
 			

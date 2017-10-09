@@ -14,7 +14,7 @@
 <meta charset="UTF-8">
 <title>部门管理</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-[% this.includeJssp('../common/include_lib.jssp'); %]
+[% this.includeJssp('../common/include_lib.jssp', {pureBootstrap: true}); %]
 </head>
 <body>
 <template>
@@ -57,7 +57,7 @@
 		                    <tr>
 		                        <th molecule="CheckHeader" col="id" text="ID"></th>
 		                        <th molecule="Header" sortable="false" col="name" text="部门名称" ></th>
-		                        <th molecule="Header" sortable="false" col="node_name" text="所属公司" ></th>
+		                        <th molecule="Header" sortable="false" col="parent_name" text="所属公司" ></th>
 		                        <th molecule="Header" sortable="false" col="def,contactMan" text="联系人"></th>
 		                        <th molecule="Header" sortable="false" col="def,tel" text="联系电话"></th>
 		                        [% if(session.user.allowed['department.edit']){ %] 
@@ -119,11 +119,11 @@
 	                    company.reload();
 	                }
 	            });
-	            var company = dataset.addTable('company', '../entity/department.d2js');
+	            var company = dataset.addTable('company', '../uac/node.d2js');
 	            company.on('load', function(error) {
 	                $el.render(dataset);
 	            });
-	            company.load({_m:'listCompanyWithDept'});
+				company.load({_m:'listAll',"types": [%~ findAncientTypes('DEPT') %]});
 	            
 	            var t2 = dataset.addTable('company_without_curr');      // 不带编辑行的一个镜像表
 	            

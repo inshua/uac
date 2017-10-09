@@ -213,51 +213,26 @@ function initTypeRelations(){
  * @param primaryDesc
  * @returns 
  */
-V.uniqueInNode = function(table, tableField, primaryDesc, ignoreCase){	
+V.uniqueInNode = function(table, tableField, ignoreCase){	
 	return {
 		name : 'unique',	
 		check : function(v, fld, rcd, d2js){
 			if(v==null||v=='') return;
 			var pk = 'id';
-			if(primaryDesc == null){
-				primaryDesc = {id : rcd.id};
-			} else {
-				for(var k in primaryDesc){
-					if(primaryDesc.hasOwnProperty(k)){
-						pk = k;
-						break;
-					}
-				}
+			fld = tableField || fld;
+			var sql = 'select 1 from uac.node where parent_id = ? and ' + fld + ' = ?';
+			if(ignoreCase){
+				if(v != null) v = v.toUpperCase();
+				sql = 'select 1 from uac.node where parent_id = ? and upper(' + fld + ') = ?';
 			}
+			var args = [rcd.parent_id, v]
+			if(rcd.id != null){
+				sql += ' and id <> ?';
+				args.push(rcd.id);
+			}
+			sql += ' limit 1';
 			
-			var rows = null;
-			if(d2js.executor.isOracle()){
-				var sql = 'select 1 from ' + table + ' where ' + (tableField || fld) + ' = ? and rownum=1';
-				if(ignoreCase){
-					sql = 'select 1 from ' + table + ' where upper(' + (tableField || fld) + ') = ? and rownum=1';
-				}
-
-				if(primaryDesc && primaryDesc[pk] != null){
-					rows = d2js.query(sql + ' and ' + pk + ' <> ?', [v, primaryDesc[pk], rcd.node]).rows;
-				} else {
-					rows = d2js.query(sql, [v, rcd.node]).rows;
-				}
-			} else if(d2js.executor.isPostgreSQL()){
-				var sql = 'select 1 from ' + table + ' where ' + (tableField || fld) + ' = ? and node=?';
-				if(ignoreCase){
-					sql = 'select 1 from ' + table + ' where upper(' + (tableField || fld) + ') = ? and node=?';
-				}
-				if(primaryDesc && primaryDesc[pk] != null){
-					sql += ' and ' + pk + ' <> ?';
-				}
-				sql += ' limit 1';
-				
-				if(primaryDesc && primaryDesc[pk] != null){
-					rows = d2js.query(sql, [v, primaryDesc[pk], rcd.node]).rows;
-				} else {
-					rows = d2js.query(sql, [v, rcd.node]).rows
-				}
-			}
+			var rows = d2js.query(sql, args);
 			
 			if(rows.length){
 				return '发现重复记录';
