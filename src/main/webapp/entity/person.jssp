@@ -170,7 +170,7 @@
 			    	row._set('tag',{"Manager":"false"});
 			    });
 			    
-			    var company = dataset.addTable('company', '../common/node.d2js');
+			    var company = dataset.addTable('company', '../uac/node.d2js');
 			    company.on('load', function (error) {
 			    	this.rows.forEach(function(row){
 			    		row.getStations = function(){

@@ -110,7 +110,7 @@
 <script>
 
 	[% if(tb.nodeColumn){ %]
-	new db2js.DataTable('node', '../common/node.d2js', {silent : false}).load('listAll', {types : [%= '[%' %]~ findAncientTypes('[%= tb.code.toUpperCase() %]') [%= '%]' %]});
+	new db2js.DataTable('node', '../uac/node.d2js', {silent : false}).load('listAll', {types : [%= '[%' %]~ findAncientTypes('[%= tb.code.toUpperCase() %]') [%= '%]' %]});
 	[% } %]
 
 	[% tb.columns.filter(function(col){return col.listOfValues;}).forEach(function(col){ %]

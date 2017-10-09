@@ -2,11 +2,32 @@
  * 可以提供 cut 剪枝及类型 types 剪枝
  * @param params {types : [node types]}
  */
-d2js.exports.listAll = true;
+d2js.exports.listAll = 
 d2js.listAll = function(params, body, pageDef){
-	var sql = this.nodeSql(params, params.types) + ' select * from nd';
+	sql{.
+		select id, name, type from uac.node node 
+		where (node.id = :node OR node.path @> ARRAY[:node]) and type = any(:types)
+		order by path, name
+	.}
+	Object.assign(params, {types: $ARRAY('varchar', params.types), 
+							node: params.node || this.session.user.node.id })
 	return this.query(sql, params);
 };
+
+
+d2js.findAncientTypesAnd = findAncientTypesAnd;
+
+d2js.exports.listNodeTypes = 
+d2js.listNodeTypes = function(){
+	return this.query('select t.child_type as name from (select distinct child_type from node_allowed_children_type order by child_type) t');
+}
+
+d2js.validate = function(rcd, action){
+	$V(this,rcd, {
+		name : [V.notNull, V.longest(200)],  
+		type : [V.notNull, V.longest(50)]  
+	});
+}
 
 /*
  * 用在组织节点的增加中，作为事务的函数调用，用法如：
@@ -18,48 +39,77 @@ d2js.listAll = function(params, body, pageDef){
  * 				this.execute('insert into company...',rcd);  
  * 			})
  * 		}
- */
- d2js.exports.createNode = true;
+ */ 
 d2js.createNode = d2js.insertNode = function(rcd, type){
-	$V(this,rcd, {
-		name : [V.longest(200)],  
-		type : [V.longest(50)]  
-	});
-
-	var id = this.nextId("SEQ_ENTITY");
-	var sql = 
-		"insert into node\n" +
-		"  (id, parent_id, name, type)\n" + 
-		"values\n" + 
-		"  (:id, :parent_id, :name, :type)";
+	this.validate(rcd, 'add')
 	
-	this.execute(sql, {id : id, name : rcd.name, type : type.toUpperCase(), parent_id : rcd.parent_id});
-	return id;	
+	rcd.type = (rcd.type || type).toUpperCase();
+	rcd.id = this.nextId("uac.node_id_seq");
+	
+	this.actas(rcd.type.toLowerCase() + '.add', 'uac.node', rcd.id, rcd);
+	
+	sql{.
+		with recursive n as (
+             select id, parent_id, array[id] path, 1 seq from uac.node where id = :parent_id
+             union all
+             select node.id, node.parent_id, array[node.id] || n.path, 1 + n.seq from uac.node, n where node.id = n.parent_id
+         )
+		insert into uac.node(id, type, parent_id, name, def, path)
+		values(:id, :type, :parent_id, :name, :def, (select path from n  order by seq desc limit 1))
+	.}
+	
+	this.execute(sql, rcd);
+	return rcd.id;	
 };
-
-d2js.findAncientTypesAnd = findAncientTypesAnd;
 
 /*
  * 同样放在事务中。
  */
- d2js.exports.updateNode = true;
 d2js.updateNode = function(rcd){
-	$V(this,rcd, {
-		name : [V.longest(200)],  
-		type : [V.longest(50)]  
-	});
-	this.updateRow('node', rcd, ["id","parent_id","name"]);	
+	this.validate(rcd, 'edit')
+	this.actas(rcd.type.toLowerCase() + '.edit', 'uac.node', rcd.id, rcd);
+	this.updateRow('uac.node', rcd, ["id","parent_id","name", 'def']);
+	if(rcd._origin && rcd._origin.parent_id == rcd.parent_id){
+		// pass
+	} else {	// parent_id changed, reset path of this node and all children
+		this.resetNodePath(rcd);
+	}
 };
+
+d2js.resetNodePath = function(node){
+	sql{.
+		with recursive n as (
+             select id, parent_id, array[id] path, 1 seq from uac.node where id = :parent_id
+             union all
+             select node.id, node.parent_id, array[node.id] || n.path, 1 + n.seq from uac.node, n where node.id = n.parent_id
+        ),
+        t as (	// update this node
+              update uac.node set path = (select path from n order by seq desc limit 1) where id = :id
+              returning *
+        ),
+        c as (	// children node, query first
+           select node.id, t.path || t.id::int path, node.parent_id from uac.node, t where node.parent_id = t.id
+           union all
+           select node.id, c.path || node.parent_id::int, node.parent_id from uac.node, c where node.parent_id = c.id
+        )		// children node, update
+        update uac.node set path = c.path from c where node.id = c.id
+	.}
+	this.execute(sql, node);
+}
 
 /**
  * 可放于事务中。如为外键已设置 cascade delete 也可单独调用。
  */
- d2js.exports.deleteNode = true;
 d2js.deleteNode = function(rcd){
-	this.deleteRow('node', rcd);
+	this.checkPrivilege(rcd.type.toLowerCase() + ".delete");
+	this.deleteRow('uac.node', rcd);
 };
 
-d2js.exports.listNodeTypes = true;
-d2js.listNodeTypes = function(){
-	return this.query('select t.child_type as name from (select distinct child_type from node_allowed_children_type order by child_type) t');
+d2js.fetchById = function(params){
+	sql{.
+		select * from uac.node where id = :id
+	.}
+	
+	return this.query(sql,params);
+
 }

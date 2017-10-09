@@ -1,49 +1,67 @@
+d2js.mixin('../uac/node.d2js');
+
 d2js.fetch = function(params){
 	this.checkPrivilege("company.query");
 	params.nodeProperty = 'parent_id';
 	
+	Object.assign(params, 
+			{types: $ARRAY('varchar', findAncientTypesAnd('COMPANY')), 
+			 parent_id: params.parent_id || this.session.user.node.id })
+
 	if(params.name){
 		sql{.
-			with recursive p as (select id, parent_id from node d 
-				where strpos(d.name, :name) > 0 
-				union
-				select f.id, f.parent_id from node f, p 
-				where f.id = p.parent_id
+			with n as (
+	           select node.* from uac.node node 
+				where (node.id = :node OR node.path @> ARRAY[:node]) and type = any(:types)
+				and strpos(node.name, :name) > 0
 			),
-			code{.
-				var nd = this.nodeSql(params, findAncientTypesAnd('COMPANY'));
-				sql += nd.substr(5); 	// bypass WITH
-			.}
-			select node.* from uac.node node, nd where node.id = nd.id and nd.id in (select id from p) order by nd.path
+			down as (
+				select distinct node.* from uac.node node, n   
+					where  node.path @> ARRAY[n.id]::int[] and node.type = any(:types)
+					and not exists (select 1 from n where id = node.id)
+			),
+			up as (
+				select distinct node.* from uac.node node, n   
+				where  n.path @> ARRAY[node.id]::int[] and node.type = any(:types)
+				and not exists (select 1 from n where id = node.id)
+			),
+			t as ( 
+			       select * from n 
+					union all 
+					select * from down
+					union all 
+					select * from up
+			)
+			select distinct * from t order by path, name
 		.}
 	} else {
 		sql{.
-			select node.* from uac.node node, nd where node.id = nd.id
+			select node.* from uac.node node 
+			where (node.id = :parent_id OR node.path @> ARRAY[:parent_id]) and type = any(:types)
+			order by path, name
 		.}
-		sql = this.nodeSql(params, findAncientTypesAnd('COMPANY')) + sql;
 	}
 	
 	return this.query(sql, params);
 };
 
+d2js.create = function(row){
+	this.createNode(row, 'COMPANY');
+}
 
+d2js.modify = function(row){
+	this.updateNode(row);
+}
 
-d2js.exports.listAll = 
-d2js.listAll = function(){
-	sql{.
-	with recursive a as (
-		select *,name::varchar(2000) path from uac.node node where id = 0
-	union 
-		select n.*,(a.path || n.name)::varchar(2000) path from uac.node n, a where n.parent_id = a.id
-	)
-		select * from a order by a.path
-	.}
-	
-	return this.query(sql, null);
+d2js.destroy = function(row){
+	this.deleteNode(row);
 }
 
 d2js.validate = function(rcd, action){
 	this.checkPrivilege("company." + action);
+	
+	if(rcd.parent_id == null) rcd.parent_id = this.session.user.node.id;
+	
 	$V(this,rcd, {
 		name : [V.notNull,V.longest(30), V.uniqueCompanyInNode('uac.node', 'name')],  
 		parent_id : [V.notNull],
@@ -54,107 +72,20 @@ d2js.validate = function(rcd, action){
 	});
 }
 
-d2js.create = function(rcd){
-	this.validate(rcd, 'add');
-	rcd.id = this.nextId("uac.node_id_seq");
-	rcd.type ="COMPANY";
-	this.actas('company.add', 'uac.node', rcd.id, rcd);
-	return this.insertRow('uac.node', rcd, ["id","name","parent_id","type","def"]);
-};
-
-
-
-d2js.modify = function(rcd){
-	this.validate(rcd, 'edit');
-	this.actas('company.edit', 'uac.node', rcd.id, rcd);
-	return this.updateRow('uac.node', rcd, ["id","name","parent_id","def"]);
-}
-
-d2js.destroy = function(rcd){
-	this.checkPrivilege("company.delete");
-	this.actas('company.delete', 'uac.node', rcd.id, rcd);
-	return this.deleteRow("uac.node",rcd);
-}
-
-d2js.fetchById = function(params){
-	sql{.
-		select * from uac.node where id = :id
-	.}
-	return this.query(sql,params);
-
-}
-
-
 V.uniqueCompanyInNode = function(table, tableField, primaryDesc, ignoreCase){	
 	return {
 		name : 'uniqueCompanyInNode',	
 		check : function(v, fld, rcd, d2js){
-			if(v==null||v=='') return;
-			var pk = 'id';
-			if(primaryDesc == null){
-				primaryDesc = {id : rcd.id};
-			} else {
-				for(var k in primaryDesc){
-					if(primaryDesc.hasOwnProperty(k)){
-						pk = k;
-						break;
-					}
-				}
-			}
+			if(v == null || v === '') return;
 			
-			if(d2js.executor.isOracle()){
-				var sql = 'select 1 from ' + table + ' where ' + (tableField || fld) + ' = ? and rownum=1';
-				if(ignoreCase){
-					sql = 'select 1 from ' + table + ' where upper(' + (tableField || fld) + ') = ? and rownum=1';
-				}
-
-				if(primaryDesc[pk] != null){
-					sql += ' and ' + pk + ' <> ?';
-				}
-			} else if(d2js.executor.isPostgreSQL()){
-				var sql = 'select 1 from ' + table + ' where ' + (tableField || fld) + ' = ?' + ' and parent_id = '+ rcd.parent_id;
-				if(ignoreCase){
-					sql = 'select 1 from ' + table + ' where upper(' + (tableField || fld) + ') = ?';
-				}
-				if(primaryDesc[pk] != null){
-					sql += ' and ' + pk + ' <> ?';
-				}
-				sql += ' limit 1';
-				
-				var r = (primaryDesc[pk] == null) ? 
-					d2js.query(sql, [v && (ignoreCase ? v.toUpperCase() : v)]) : 
-					d2js.query(sql, [v, primaryDesc[pk]]);
-					
+			sql{.
+				select * from node where parent_id = :parent_id and name = :name
+			.}	
+			var r = d2js.query(sql, rcd);
+			
 			if(r.rows.length){
 				return '名称为' + v + '的公司已经存在';
 			}
-			
-			var sql = 'select 1 from ' + table + ' where ' + (tableField || fld) + ' = ?' + ' and id = '+ rcd.parent_id;
-				if(ignoreCase){
-					sql = 'select 1 from ' + table + ' where upper(' + (tableField || fld) + ') = ?';
-				}
-				if(primaryDesc[pk] != null){
-					sql += ' and ' + pk + ' <> ?';
-				}
-				sql += ' limit 1';
-				
-				var r = (primaryDesc[pk] == null) ? 
-					d2js.query(sql, [ignoreCase ? (v && v.toUpperCase()) : v]) : 
-					d2js.query(sql, [v, primaryDesc[pk]]);
-					
-			if(r.rows.length){
-				return '名称为' + v + '的公司已经存在';
-			}
-		}
-			
-			var r = (primaryDesc[pk] == null) ? 
-					d2js.query(sql, [ignoreCase ? (v && v.toUpperCase()) : v]) : 
-					d2js.query(sql, [v, primaryDesc[pk]]);
-					
-			if(r.rows.length){
-				return '名称为' + v + '的公司已经存在';
-			}
-			
 		}
 	};
 };

@@ -172,7 +172,7 @@
 					row._set('id', -1)._set('visibility','H')._set('state','N')._set('is_root','N')._set('kind','L');
 				})
 				
-				var company = dataset.addTable('company', '../common/node.d2js');
+				var company = dataset.addTable('company', '../uac/node.d2js');
 				company.on('load', function(error) {
 					$el.render(dataset);
 				});

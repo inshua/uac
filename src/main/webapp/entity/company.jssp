@@ -120,11 +120,11 @@
 					}
 				});
 				
-				var node = dataset.addTable('node', '../common/node.d2js');
+				var node = dataset.addTable('node', '../uac/node.d2js');
 				node.on('load', function(error) {
 					$el.render(dataset);
 				});
-				node.load({_m:'listAll',"types":"COMPANY"});
+				node.load({_m:'listAll',"types": [%~ findAncientTypesAnd('COMPANY') %]});
 				
 				var table1 = dataset.addTable('node_without_curr','../entity/company.d2js');
 				$(function() {

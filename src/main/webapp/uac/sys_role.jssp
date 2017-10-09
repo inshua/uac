@@ -172,7 +172,7 @@
 			    var allFunctions=dataset.addTable('sys_function', '../uac/sys_role.d2js');
 			    allFunctions.load({_m:'fetchDispatchedFunctions'});
 			    
-			    var allCompanys = dataset.addTable('all_company', '../common/node.d2js');
+			    var allCompanys = dataset.addTable('all_company', '../uac/node.d2js');
 			    allCompanys.on('load', function (error) { 
 			    	$el.render(dataset); 
 			    });

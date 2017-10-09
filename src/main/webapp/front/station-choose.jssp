@@ -49,7 +49,7 @@
 				
 				session.user.functions = functions;
 				session.user.allowed = allowedFunctions;
-				session.user.node = this.callD2js("../common/node.d2js","fetchById",{id : chooseObj.node_id}).rows[0];
+				session.user.node = this.callD2js("../uac/node.d2js","fetchById",{id : chooseObj.node_id}).rows[0];
 				session.user.stations = chooseObj.roles.map(function(a){return a.station_id}).join();
 				session.user.roles = chooseObj.roles;
 				session.user.role = chooseObj.roles[0];
@@ -81,7 +81,7 @@
 				logger.info('create online user : ' + em);
 				application['employee_' + em] = session;
 				if(session.user.id == 0){
-					session.user.node = this.callD2js("../common/node.d2js","fetchById",{id : 0}).rows[0];
+					session.user.node = this.callD2js("../uac/node.d2js","fetchById",{id : 0}).rows[0];
 					session.user.login.result_desc = session.user.username+'登录系统';
 					var log = this.callD2js('../uac/login_log.d2js','create');
 					session.user.login.result = log.result;
