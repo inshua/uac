@@ -1,11 +1,18 @@
 
 d2js.fetch = function(params){
-	
-	var sql = this.nodeSql(params,findAncientTypesAnd("EMPLOY_LOG")) +
-			'select t.id,t.node,t.start_date,t.end_date,t.job,t.person,t.sys_user,t.state, nd.name node_name from employ_log t, nd where t.node = nd.id';
+	this.checkPrivilege("employee_log.query");
 
+	params.node = params.node || this.session.user.node.id;
+
+	sql{.
+		with nd as (
+		     select id from uac.node where node.id = :node or node.path @> array[:node]
+		)
+		select t.id,t.node,t.start_date,t.end_date,t.job,t.person,t.sys_user,t.state, nd.name node_name from employ_log t, nd where t.node = nd.id
+	.}
 	
-	sql = this.appendSort(sql, params._sorts);
+	
+	sql = this.orderBy(sql, params._sorts);
 	
 	return this.query(sql, params, params._page);
 };

@@ -1,6 +1,12 @@
 d2js.fetch=function(params){
+	this.checkPrivilege("person.query");
+
+	params.node = params.node || this.session.user.node.id;
+
 	sql{.
-		,
+		with nd as (
+		     select id from uac.node where node.id = :node or node.path @> array[:node]
+		)
 		st AS 
 		    (SELECT t.id
 		    FROM uac.sys_station t, nd
@@ -32,14 +38,21 @@ d2js.fetch=function(params){
 		.}
 		
 	.}
-	sql = this.appendSort(sql, params._sorts);
-	return this.query(this.nodeSql(params, findAncientTypes('PERSON')) + sql, params,params._page);
+	sql = this.orderBy(sql, params._sorts);
+	return this.query(sql, params,params._page);
 
 }
 
 // 先用这个版本，后面改好上面的版本后再实用
 d2js.fetch=function(params){
+	this.checkPrivilege("person.query");
+
+	params.node = params.node || this.session.user.node.id;
+
 	sql{.
+		with nd as (
+		     select id from uac.node where node.id = :node or node.path @> array[:node]
+		)
 		select em.id id,em.employee_no, em.state,em.nodes,em.sys_stations,
 			pe.id person_id,pe.password,pe.name,pe.address,pe.tel,pe.mobile,pe.tag,pe.photo,
 			pe.wechat,pe.username,pe.email,pe.birth,pe.gender,pe.id_card,
@@ -60,8 +73,8 @@ d2js.fetch=function(params){
 		.}
 		
 	.}
-	sql = this.appendSort(sql, params._sorts);
-	return this.query(this.nodeSql(params, findAncientTypes('PERSON')) + sql, params,params._page);
+	sql = this.orderBy(sql, params._sorts);
+	return this.query(sql, params,params._page);
 
 };
 

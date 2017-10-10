@@ -1,4 +1,4 @@
-
+// sys_user 是没有 sys_station 时的设计，现已废弃
 d2js.fetch = function(params){
 	var sql = this.nodeSql(params, findChildTypes('SYS_USER')) +
 			'select t.id,t.username,t.password,t.node,t.email,t.mobile,t.state,t.remarks, t.login_type, t.person, t.name, t.global_account, nd.name node_name \

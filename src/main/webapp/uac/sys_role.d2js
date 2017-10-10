@@ -290,6 +290,7 @@ d2js.modify = function(rcd){
 };
 
 // 提取公司可用角色
+// 废弃
 d2js.fetchAvaliableRoles = function(params){
 	var sql = "select * from (" + this.nodeSql(params,findChildTypes('SYS_ROLE')) +
 			'select t.id,t.node,t.name,t.role_level,t.state, nd.name node_name \

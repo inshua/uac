@@ -490,7 +490,8 @@ CREATE TABLE node (
     parent_id numeric,
     name character varying(200),
     type character varying(50),
-    def jsonb
+    def jsonb,
+    path integer[]
 );
 
 
@@ -1076,10 +1077,11 @@ SELECT pg_catalog.setval('code_log_seq', 203, true);
 
 COPY employee (id, employee_no, person, state, nodes, sys_stations) FROM stdin;
 1	1	0	A	{0}	{1405}
-10166	2	10166	A	{533,535}	{1405,1407}
 5	22	10170	A	\N	\N
 3	4	10168	A	\N	\N
 2	3	10167	A	\N	\N
+6	332	10171	A	{535}	{1407}
+10166	2	10166	A	{533,535}	{1405,1407}
 \.
 
 
@@ -1094,7 +1096,7 @@ SELECT pg_catalog.setval('employee_id_seq', 34740, true);
 -- Name: employee_id_seq1; Type: SEQUENCE SET; Schema: uac; Owner: uac
 --
 
-SELECT pg_catalog.setval('employee_id_seq1', 5, true);
+SELECT pg_catalog.setval('employee_id_seq1', 6, true);
 
 
 --
@@ -1104,6 +1106,7 @@ SELECT pg_catalog.setval('employee_id_seq1', 5, true);
 COPY employee_station (id, employee, station, kind, is_member) FROM stdin;
 6	10166	1405	B	Y
 22	10166	1407	B	Y
+28	6	1407	T	Y
 \.
 
 
@@ -1111,7 +1114,7 @@ COPY employee_station (id, employee, station, kind, is_member) FROM stdin;
 -- Name: employee_station_id_seq; Type: SEQUENCE SET; Schema: uac; Owner: uac
 --
 
-SELECT pg_catalog.setval('employee_station_id_seq', 27, true);
+SELECT pg_catalog.setval('employee_station_id_seq', 28, true);
 
 
 --
@@ -1174,11 +1177,32 @@ SELECT pg_catalog.setval('image_seq', 38, true);
 -- Data for Name: login_log; Type: TABLE DATA; Schema: uac; Owner: uac
 --
 
+COPY login_log (id, person, login_d, action, description, address, session_id, result, result_desc, login_mode, device_id) FROM stdin;
+3919	0	\N	L	登录名为root,登录类型为用户名登录	localhost	50C408DF0A985A976B41B610C90721A2	S	root登录系统	B	\N
+3920	0	\N	L	登录名为root,登录类型为用户名登录	localhost	8D951C4956F93838DD0B361246C11C4E	S	root登录系统	B	\N
+3921	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
+3922	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
+3923	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
+3924	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
+3925	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
+3926	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
+3927	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
+3928	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
+3929	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
+3930	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
+3931	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
+3932	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
+3933	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
+3934	0	\N	L	登录名为root,登录类型为用户名登录	localhost	9D2B91C7056A1CA53A897A17D6F249D1	S	root登录系统	B	\N
+3935	0	\N	L	登录名为root,登录类型为用户名登录	localhost	9D2B91C7056A1CA53A897A17D6F249D1	S	root登录系统	B	\N
+\.
+
+
 --
 -- Name: login_log_id_seq; Type: SEQUENCE SET; Schema: uac; Owner: uac
 --
 
-SELECT pg_catalog.setval('login_log_id_seq', 3918, true);
+SELECT pg_catalog.setval('login_log_id_seq', 3935, true);
 
 
 --
@@ -1203,12 +1227,16 @@ SELECT pg_catalog.setval('member_message_id_seq', 2, true);
 -- Data for Name: node; Type: TABLE DATA; Schema: uac; Owner: uac
 --
 
-COPY node (id, parent_id, name, type, def) FROM stdin;
-0	\N	所有公司	ROOT	\N
-533	0	IBM	COMPANY	{"tel": "222333dd", "remark": null, "address": "dddf", "contactMan": "22"}
-535	533	IBM China	COMPANY	{"tel": "cd", "remark": null, "address": "a", "contactMan": "b"}
-536	533	IBM Japan	COMPANY	{"tel": "f", "remark": null, "address": "d", "contactMan": "e"}
-538	535	保卫部	DEPT	{"tel": "d", "remark": null, "address": "adsf", "contactMan": "d"}
+COPY node (id, parent_id, name, type, def, path) FROM stdin;
+543	533	IBM Asia	COMPANY	{"tel": "2232", "remark": null, "address": "dae", "contactMan": "qqq"}	{0,533}
+542	543	IBM India	COMPANY	{"tel": "dd", "remark": null, "address": "tt", "contactMan": "aa"}	{0,533,543}
+533	0	IBM	COMPANY	{"tel": "222333dd", "remark": null, "address": "dddf", "contactMan": "22"}	{0}
+536	543	IBM Japan	COMPANY	{"tel": "f", "remark": null, "address": "d", "contactMan": "e"}	{0,533,543}
+538	535	保卫部	DEPT	{"tel": "d", "remark": null, "address": "adsf", "contactMan": "d"}	{0,533,543,535}
+535	543	IBM China	COMPANY	{"tel": "cd", "remark": null, "address": "aa", "contactMan": "ba"}	{0,533,543}
+544	535	IBM Beijing	COMPANY	{"tel": "23123", "remark": null, "address": "dd", "contactMan": "aq"}	{0,533,543,535}
+0	\N	所有公司	ROOT	\N	{}
+547	533	财务部	DEPT	{"tel": "22", "remark": null, "address": "daf", "contactMan": "2321"}	{0,533}
 \.
 
 
@@ -1230,6 +1258,9 @@ COMPANY	DEPT	1708
 DEPT	SYS_ROLE	1709
 DEPT	SYS_STATION	1710
 COMPANY	SYS_STATION	1711
+DEPT	EMPLOYEE	3234
+ROOT	EMPLOYEE	3236
+COMPANY	EMPLOYEE	3235
 \.
 
 
@@ -1237,7 +1268,7 @@ COMPANY	SYS_STATION	1711
 -- Name: node_id_seq; Type: SEQUENCE SET; Schema: uac; Owner: uac
 --
 
-SELECT pg_catalog.setval('node_id_seq', 538, true);
+SELECT pg_catalog.setval('node_id_seq', 547, true);
 
 
 --
@@ -1252,7 +1283,6 @@ SELECT pg_catalog.setval('notify_id_seq', 24, true);
 --
 
 COPY operation_log (id, person, address, sessionid, start_time, end_time, function_code, apply_table, row_id, op_desc, result, result_desc) FROM stdin;
-1556	0	0:0:0:0:0:0:0:1:65400	F8A8E38871DCE80B1CFAD6ADA21E0080	1504688244833	1504688244891	company.add	UAC.NODE	533	{"parent_id":0,"name":"IBM","def":{"address":"dddf","contactMan":"22","tel":"222333","remark":null},"_state":"new","_idx":1,"_object_id":1,"id":533,"type":"COMPANY"}	S	\N
 \.
 
 
@@ -1265,7 +1295,8 @@ COPY person (id, name, photo, address, tel, mobile, wechat, username, password, 
 10167	zhang	\N	ddd	\N	\N	\N	3	c984aed014aec7623a54f0591da07a85fd4b762d	\N	\N	\N	M	\N	{"Manager": "false"}	\N								0	0
 10170	dd	\N	dd	\N	\N	\N	22	c984aed014aec7623a54f0591da07a85fd4b762d	\N	\N	\N	M	\N	{"Manager": "false"}	\N								0	0
 0	root	http://121.40.216.238/Service/Attrachment/test.png	\N	\N	15980080080	\N	root	7c4a8d09ca3762af61e59520943dc26494f8941b	\N	\N	\N	M	510108166602021111            	{"intentDepatment": "gaaasdfasd"}	\N								0	0
-10166	zhang	\N	ddddd	\N	\N	\N	2	c984aed014aec7623a54f0591da07a85fd4b762d	\N	\N	\N	M	\N	\N	\N								0	0
+10171	John	\N	xxz	\N	\N	\N	332	c984aed014aec7623a54f0591da07a85fd4b762d	\N	\N	2017-09-13	M	\N	{"Manager": "false"}	\N								0	0
+10166	zhang	\N	ddddd	\N	2222	\N	2	c984aed014aec7623a54f0591da07a85fd4b762d	\N	\N	\N	M	\N	\N	\N								0	0
 \.
 
 
@@ -1287,21 +1318,21 @@ SELECT pg_catalog.setval('push_id_seq', 383, true);
 -- Name: seq_entity; Type: SEQUENCE SET; Schema: uac; Owner: uac
 --
 
-SELECT pg_catalog.setval('seq_entity', 10170, true);
+SELECT pg_catalog.setval('seq_entity', 10186, true);
 
 
 --
 -- Name: seq_nonentity; Type: SEQUENCE SET; Schema: uac; Owner: uac
 --
 
-SELECT pg_catalog.setval('seq_nonentity', 3191, true);
+SELECT pg_catalog.setval('seq_nonentity', 3236, true);
 
 
 --
 -- Name: seq_operation_log; Type: SEQUENCE SET; Schema: uac; Owner: uac
 --
 
-SELECT pg_catalog.setval('seq_operation_log', 1587, true);
+SELECT pg_catalog.setval('seq_operation_log', 1638, true);
 
 
 --
@@ -1368,6 +1399,7 @@ COPY sys_function (id, name, parent_id, menu_index, state, developer, code, uri,
 
 COPY sys_role (id, node, name, state, role_level, node_scope, remarks, code) FROM stdin;
 10157	533	OP	N	1	R	\N	OP
+10186	538	保卫部主管	N	2	R	\N	guard_mgr
 \.
 
 
@@ -1401,6 +1433,18 @@ COPY sys_role_function (id, sys_role, sys_function, dispatch_mode) FROM stdin;
 3172	10157	1739	I
 3173	10157	1744	I
 3174	10157	1928	O
+3192	10186	0	I
+3193	10186	9	I
+3194	10186	10	R
+3195	10186	1755	R
+3196	10186	1753	O
+3197	10186	1847	R
+3198	10186	1971	R
+3199	10186	602	R
+3200	10186	1685	R
+3201	10186	1739	R
+3202	10186	1744	R
+3203	10186	1928	R
 \.
 
 
@@ -1418,6 +1462,36 @@ COPY sys_role_sub_function (id, sys_role, sub_function, dispatch_mode) FROM stdi
 3181	10157	2350	O
 3182	10157	2351	O
 3183	10157	2352	O
+3204	10186	2359	R
+3205	10186	2360	R
+3206	10186	2361	R
+3207	10186	2366	R
+3208	10186	3161	R
+3209	10186	3163	R
+3210	10186	3164	R
+3211	10186	3165	R
+3212	10186	3160	O
+3213	10186	3162	R
+3214	10186	2367	R
+3215	10186	2368	R
+3216	10186	2369	R
+3217	10186	2370	R
+3218	10186	2353	R
+3219	10186	2354	R
+3220	10186	2355	R
+3221	10186	2356	R
+3222	10186	2341	R
+3223	10186	2342	R
+3224	10186	2347	R
+3225	10186	2348	R
+3226	10186	2343	R
+3227	10186	2344	R
+3228	10186	2345	R
+3229	10186	2346	R
+3230	10186	2349	R
+3231	10186	2350	R
+3232	10186	2351	R
+3233	10186	2352	R
 \.
 
 
@@ -1807,9 +1881,6 @@ ALTER TABLE ONLY sys_role_sub_function
 -- Name: uac; Type: ACL; Schema: -; Owner: uac
 --
 
-REVOKE ALL ON SCHEMA uac FROM postgres;
-REVOKE ALL ON SCHEMA uac FROM PUBLIC;
-GRANT ALL ON SCHEMA uac TO uac;
 GRANT ALL ON SCHEMA uac TO PUBLIC;
 
 

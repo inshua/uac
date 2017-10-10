@@ -186,7 +186,7 @@
 			    	})
 			    	$el.render(dataset); 
 			    });
-			    company.load({_m:'listAll'});
+			    company.load({_m:'listAll', "types": [%~ findAncientTypes('EMPLOYEE') %]});
 			    
 			    var allStations=dataset.addTable('all_station','../uac/sys_station.d2js');
 			    

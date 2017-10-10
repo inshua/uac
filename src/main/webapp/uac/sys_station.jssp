@@ -14,7 +14,7 @@
 <meta charset="UTF-8">
 <title>岗位设置</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-[% this.includeJssp('../common/include_lib.jssp'); %]
+[% this.includeJssp('../common/include_lib.jssp', {pureBootstrap: true}); %]
 </head>
 <body>
 <template>
@@ -176,7 +176,7 @@
 				company.on('load', function(error) {
 					$el.render(dataset);
 				});
-				company.load('listAll',{types : [%~ findAncientTypesAnd('SYS_STATION') %]});
+				company.load('listAll',{types : [%~ findAncientTypes('SYS_STATION') %]});
 				
 				var sys_station_role_dispatch = dataset.addTable('sys_station_role_dispatch','../uac/sys_station_role_dispatch.d2js');
 				
@@ -185,11 +185,11 @@
 				});
 				
 				//提交前执行
-				var sys_role = dataset.addTable('sys_role', '../uac/sys_station.d2js');
+				var sys_role = dataset.addTable('sys_role', '../uac/sys_role.d2js', {pageSize: -1});
 				sys_role.on('load', function(error) {
 					$el.render(dataset);
 				});
-				sys_role.load('fetchAllRole');
+				sys_role.load('fetch');
 		   		dataset.addRelation('sys_station','id','sys_station_role_dispatch','sys_station');
 		   		
 				$el.on('tablelist.edit', function(e,row) {
