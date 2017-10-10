@@ -85,10 +85,12 @@ d2js.resetNodePath = function(node){
 		with recursive n as (
              select id, parent_id, array[id] path, 1 seq from uac.node where id = :parent_id
              union all
+             select 0, null, array[]::int[], 0 
+             union all
              select node.id, node.parent_id, array[node.id] || n.path, 1 + n.seq from uac.node, n where node.id = n.parent_id
         ),
         t as (	// update this node
-              update uac.node set path = (select path from n order by seq desc limit 1) where id = :id
+              update uac.node set path =  (select path from n order by seq desc limit 1) where id = :id
               returning *
         ),
         c as (	// children node, query first
