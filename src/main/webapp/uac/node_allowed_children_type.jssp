@@ -22,8 +22,8 @@
 		<div molecule-def='NodeAllowedChildrenType'>
 			<div molecule="TableList" table="ns_node_allow_children_type,node_allow" edit-dialog="node_allow-dialog" >
 		        <h1 class="page-title">子类型管辖关系管理</h1>
-		        <div class="search-bar">
-					<form molecule="SearchForm" style="float: none;">
+				<form molecule="SearchForm" style="float: none;">
+			        <div class="search-bar">
 					    <div class="form-row">
 			                <div molecule="SearchFormItem" col="parent_type" text="父节点：">
 			                    <input type="text" molecule="Input">
@@ -33,18 +33,17 @@
 			                </div>
 			                <button molecule="SearchButton" role="search">搜索</button>
 					    </div>
-						
-					</form>
-				</div>
-				<div class="tool-bar">
-			        [% if(session.user.allowed['node_allowed_children_type.add']){ %] 
-			        <button molecule="AddButton" role="add">添加</button>
-			        [% } %]
-			        [% if(session.user.allowed['node_allowed_children_type.delete']){ %] 
-		            <button molecule="DelButton" role="delete">删除</button>
-		            [% } %]
-		            
-				</div>
+					</div>
+					<div class="tool-bar">
+				        [% if(session.user.allowed['uac.node_allowed_children_type.add']){ %] 
+				        <button molecule="AddButton" role="add">添加</button>
+				        [% } %]
+				        [% if(session.user.allowed['uac.node_allowed_children_type.delete']){ %] 
+			            <button molecule="DelButton" role="delete">删除</button>
+			            [% } %]
+			            
+					</div>
+				</form>
 				<div molecule="TableError"></div>
 				<div class="main-table">
 					<table id="grdMain" molecule="List" allow-remove="[%= session.user.allowed['node_allowed_children_type.delete'] %]" >
@@ -53,7 +52,7 @@
 								<th molecule="CheckHeader" col="id" text="ID"></th>
 								<th molecule="Header" sortable="false" col="parent_type" text="父节点" ></th>
 								<th molecule="Header" sortable="false" col="child_type" text="子节点" ></th>
-								[% if(session.user.allowed['sys_station.edit']){ %] 
+								[% if(session.user.allowed['uac.node_allowed_children_type.edit']){ %] 
 								<th data-t="id" renderer="editLink"></th> 
 								[% } %]
 							</tr>

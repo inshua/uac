@@ -37,7 +37,7 @@ d2js.modify = function(rcd){
 	this.validate(rcd, 'edit');
 	
 	this.actas('uac.node_allowed_children_type.edit', 'uac.node_allowed_children_type', rcd.id, rcd);
-	this.updateRow('uac.uac.node_allowed_children_type', rcd, ["parent_type","child_type","id"]);
+	this.updateRow('uac.node_allowed_children_type', rcd, ["parent_type","child_type","id"]);
 };
 
 d2js.destroy = function(rcd){
