@@ -26,56 +26,75 @@
 		}
 		return d;
 	})();
-	tb.nodeColumn = tb.columns[tb.columns.find(function(col){return col.parentTable == 'node';})];
-	tb.pkColumn = tb.columns[tb.columns.find(function(col){return col.primary;})];
+	tb.nodeColumn = tb.columns.find(function(col){return col.parentTable == 'node';});
+	tb.pkColumn = tb.columns.find(function(col){return col.primary;});
 	
 %]
 d2js.fetch = function(params){
-[%	cond(tb.nodeColumn, function(){ %]	
-	var sql = this.nodeSql(params[% var col = tb.nodeColumn; cond(col, function(){%],findAncientTypesAnd([%~ tb.code.toUpperCase() %])[% }); %]) +
-			'select [%= tb.columns.map(function(col){return 't.' + col.code}).join(",") %], nd.name node_name from [%= tb.code %] t, nd where t.[%= tb.nodeColumn.code %] = nd.id';
+	this.checkPrivilege("[%= tb.code %].query");
+[%	cond(tb.nodeColumn, function(){ %]
+	params.node = params.node || this.session.user.node.id;
+	params.types = findAncientTypes([%~ tb.code.toUpperCase() %])
+	sql{.
+		with nd as (
+			select node.* from uac.node
+			where node.id = :node OR node.path @> ARRAY[:node]
+		)
+		select [%= tb.columns.map(function(col){return 't.' + col.code}).join(",") %], nd.name node_name 
+		  from [%= tb.code %] t, nd 
+		 where t.[%= tb.nodeColumn.code %] = nd.id
+	.}	
 [%  }, true, function(){ %]
 	sql{.
 	   select [%= tb.columns.map(function(col){return 't.' + col.code}).join(",") %] 
 	     from [%= tb.code %] t
 	    where 1 = 1
 	.}
-
-	sql += ' where 1=1 ';
 [%  }); %]
 [% tb.columns.filter(function(itm){return itm.searchUiIndex && itm != tb.nodeColumn;})
  				.sort(function(itm){return itm.searchUiIndex;}).forEach(function(col){
 	cond(dbTypeToExtFiledType(col.type) == 'string', function(){%]
-	if(params.[%= col.code %] != null) sql += ' and instr([%= col.code %], :[%= col.code %]) > 0';
+	sql{.?(params.[%= col.code %] != null) 
+		and instr([%= col.code %], :[%= col.code %]) > 0
+	.}
 	[%}, function(){%]
-	if(params.[%= col.code %] != null) sql += ' and [%= col.code %] = :[%= col.code %]';
+	sql{.?(params.[%= col.code %] != null) 
+		and [%= col.code %] = :[%= col.code %]
+	.}
 [%	});		
  });%]
 
-	sql = this.appendSort(sql, params._sorts);
+	sql = this.orderBy(sql, params._sorts);
 	
 	return this.query(sql, params, params._page);
 };
 [%	function validations(){ %] 	 	
-	$V(rcd, {[% tb.columns.forEach(function(col){ 
+	$V(this, rcd, {[% tb.columns.forEach(function(col){ 
 		%][%= col.code %] : [[%= col.notNull ? 'V.notNull,' : '' %][%= col.length ? 'V.longest(' + col.length + '),' : '' %][%= col.listOfValues ? 'V.inside([' + col.listOfValues.keys().map(function(k){return '"' + k + '"';}).join(',') + ']),' : '' %][%= col.unique ? 'V.unique(\'' + tb.code + '\'),' : '' %][%= col.uniqueInNode ? 'V.uniqueInNode(\'' + tb.code + '\'),' : '' %]],  
 		[% }); %]
 	});
 [%	} %]
 
-d2js.create = function(rcd){
+d2js.validate = function(rcd, action){
+	this.checkPrivilege("[%= tb.code %]." + action);
 	[% validations(); %]
+}
+
+d2js.create = function(rcd){
+	this.validate(rcd, 'add');
 	
 	rcd.[%=tb.pkColumn.code%] = this.nextId([%~ tb.pkColumn.sequence || 'SEQ_ENTITY' %]);
 	actas('[%= tb.code %].add', '[%= tb.code %]', rcd.[%=tb.pkColumn.code%], rcd);
 	this.insertRow('[%= tb.code %]', rcd, [%~ tb.columns.map(function(col){return col.code;}) %]);};
 
 d2js.modify = function(rcd){
-	[% validations(); %]
+	this.validate(rcd, 'edit');
 	
 	actas('[%= tb.code %].edit', '[%= tb.code %]', rcd.[%=tb.pkColumn.code%], rcd);
 	this.updateRow('[%= tb.code %]', rcd, [%~ tb.columns.map(function(col){return col.code;}) %]);};
 
 d2js.destroy = function(rcd){
+	this.validate(rcd, 'delete');
+	
 	actas('[%= tb.code %].delete', '[%= tb.code %]', rcd.[%=tb.pkColumn.code%], rcd);
 	this.deleteRow('[%= tb.code %]', rcd);};
