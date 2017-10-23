@@ -186,25 +186,26 @@ d2js.loadFunctions = function(role){
 			"   order siblings by menu_index)\n" + 
 			"select fun.*, rf.dispatch_mode from fun, rf where rf.sys_function = fun.id";
 	} else if(this.executor.isPostgreSQL()){
-		var sql =
-			"WITH rf AS\n" +
-			" (SELECT * FROM uac.sys_role_function WHERE sys_role = ?),\n" + 
-			"fun AS\n" + 
-			" (WITH RECURSIVE t AS\n" + 
-			"     (SELECT *, ARRAY[menu_index] menu_path\n" + 
-			"       FROM uac.sys_function sys_function\n" + 
-			"      WHERE id = 0\n" + 
-			"     UNION\n" + 
-			"     SELECT d.*, menu_path || d.menu_index\n" + 
-			"       FROM uac.sys_function d, t\n" + 
-			"      WHERE d.parent_id = t.id\n" + 
-			"        AND d.state IN ('N', 'H')\n" + 
-			"        AND d.id IN (SELECT sys_function FROM rf))\n" + 
-			"    SELECT id, NAME, parent_id, menu_index, state, developer, code, uri, icon_url, \n" + 
-			"           open_mode\n" + 
-			"      FROM t\n" + 
-			"     ORDER BY menu_path)\n" + 
-			"SELECT fun.*, rf.dispatch_mode FROM fun, rf WHERE rf.sys_function = fun.id";
+		sql{.
+			WITH rf AS
+			 (SELECT * FROM uac.sys_role_function WHERE sys_role = ?),
+			fun AS
+			 (WITH RECURSIVE t AS
+			     (SELECT *, ARRAY[menu_index] menu_path
+			       FROM uac.sys_function sys_function
+			      WHERE id = 0
+			     UNION
+			     SELECT d.*, menu_path || d.menu_index
+			       FROM uac.sys_function d, t
+			      WHERE d.parent_id = t.id
+			        AND d.state IN ('N', 'H')
+			        AND d.id IN (SELECT sys_function FROM rf))
+			    SELECT id, NAME, parent_id, menu_index, state, developer, code, uri, icon_url, 
+			           open_mode, menu_path
+			      FROM t)
+			SELECT fun.*, rf.dispatch_mode FROM fun, rf WHERE rf.sys_function = fun.id
+			ORDER BY fun.menu_path
+		.}
 	}
 	return this.query(sql, [role]).rows;
 };
