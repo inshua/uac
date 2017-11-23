@@ -33,7 +33,7 @@ d2js.fetch = function(params){
 					where f.id = up.parent_id),			
 				 all_ as (
 					select *, array[menu_index] path 
-					from sys_function 
+					from uac.sys_function 
 					where id = :parent_id
 					union 
 					select d.*, path || d.menu_index from uac.sys_function d, all_ 
