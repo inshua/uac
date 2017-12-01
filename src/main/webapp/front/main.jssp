@@ -226,7 +226,7 @@
 			cnt.style.marginTop = '6px';
 			if(isMolecule){
 				// Molecule.debug = true;
-				if(Molecule.definesByFullname[code] == null){
+				if(Molecule.defines[code] == null){
 					await Molecule.loadHtml('[%= website %]/' + uri);
 				}
 				$('<div class="+ main-content" molecule=' + code + '></div>').appendTo(cnt)
