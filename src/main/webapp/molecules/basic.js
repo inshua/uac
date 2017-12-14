@@ -770,17 +770,12 @@ basicui.List = function(ui){
 		
 		leftFoot.html(s);
 		leftFoot.on('click', '.btn-remove', function (evt) {
-			debugger;
 			var th = me.$el.find('thead>tr>th[molecule-obj=CheckHeader]');
 			var col = th.attr('col');
 			var checked = th.molecule().checked();
 			willDeleteRows = checked.map(function (c) {
 				var t = me.table();
-				if(t.isList){
-					return t.find(function(entity){return entity[col] == c});
-				} else {
-					return t.find(col, c)
-				}
+				return t.find(col, c)
 			}).filter(function (r) {
 				return r
 			});
@@ -914,8 +909,10 @@ basicui.Pagination = function(ui){
 						$a.html('...').addClass('item page-num disabled');
 					}
 					if(bootstrap){
-						var $li = $(document.createElement('li')).insertAfter(el).addClass('disabled');
-						var $a = $(document.createElement('a')).appendTo(li).html('...');
+						console.info(el)
+						var $li = $(document.createElement('li')).addClass('disabled page-num').insertAfter(el);
+						var $a = $(document.createElement('a')).appendTo($li).html('...');
+						el = $li
 					}
 				}
 			}
