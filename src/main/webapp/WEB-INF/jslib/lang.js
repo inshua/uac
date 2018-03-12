@@ -444,21 +444,24 @@ Object.override = function(base, extend, override){
 		if(k in base == false){
 			base[k] = extend[k]
 		} else if(override){
-			var old = base[k], neo = extend[k];
-			if(old instanceof Function && neo instanceof Function){
-				neo.applySuper = function(thiz, arguments){
-					return old.apply(thiz, arguments);
-				}
-				neo.callSuper = function(thiz){
-					return old.apply(thiz, Array.prototype.slice.call(arguments,1));
-				}
-				base[k] = neo;
-			} else {
-				base[k] = extend[k];
-			}
+			wrap(base[k], extend[k]);
 		}
 	}
 	return base;
+	
+	function wrap(old, neo){
+		if(old instanceof Function && neo instanceof Function){
+			neo.applySuper = function(thiz, arguments){
+				return old.apply(thiz, arguments);
+			}
+			neo.callSuper = function(thiz){
+				return old.apply(thiz, Array.prototype.slice.call(arguments,1));
+			}
+			base[k] = neo;
+		} else {
+			base[k] = extend[k];
+		}
+	}
 }
 
 /**
@@ -480,4 +483,38 @@ Function.prototype.override = function(newFun){
 	}
 	return newFun;
 }
+
+JSON.wrapReplacer = function(customReplacer, preserveReplacer){
+	return function(key, value){
+		if(customReplacer instanceof Function){
+			value = customReplacer(key, value);
+			return preserveReplacer(key, value);
+		} else {
+			if(customReplacer.indexOf(key) == -1){
+				return undefined;
+			} else {
+				return preserveReplacer(key, value);
+			}
+		}
+	}
+}
+JSON.toString = function(){return '__ORIGIN_JSON__'}
+__ORIGIN_JSON__ = JSON;
+
+__D2JS_JSON__ =
+JSON = {
+    toString: function(){return '__D2JS_JSON__'},
+    
+    stringify: __ORIGIN_JSON__.stringify,
+    parse: function(s){
+    	return __ORIGIN_JSON__.parse(s, parseDate)
+    },
+    tryStringify: function(obj){
+		try{
+			return JSON.stringify(obj)
+		} catch(e){
+			return obj == null ? 'null' : obj.toString()
+		}
+    }
+};
 

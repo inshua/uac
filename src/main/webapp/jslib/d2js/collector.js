@@ -170,14 +170,27 @@ d2js.Collectors.n = d2js.KNOWN_COLLECTORS['n'] = function(element, newValue, col
  * @param newValue
  * @returns {Date}
  */
-d2js.Collectors.d = d2js.KNOWN_COLLECTORS['d'] = function(element, newValue, columnName, row, index, rows, _1, table){
+d2js.Collectors.date = d2js.Collectors.d = 
+d2js.KNOWN_COLLECTORS['d'] =
+d2js.KNOWN_COLLECTORS['date'] = function(element, newValue, columnName, row, index, rows, _1, table){
 	if(newValue instanceof String) newValue = newValue.trim();
 	if(!newValue){
 		return null;
 	} else if(newValue instanceof Date){
 		return newValue;
 	} else {
-		return Date.parse(newValue, element.getAttribute('format'));
+		var s = element.getAttribute('format') || 'yyyy-MM-dd HH:mm:ss' 
+		if(typeof JSJoda != 'undefined'){
+			try{
+				var f = JSJoda.DateTimeFormatter.ofPattern(f)
+				return JSJoda.ZonedDateTime.parse(value, f);
+			} catch(e) {
+				var dt = Date.parse(newValue, s);
+				return JSJoda.ZonedDateTime.from(JSJoda.nativeJs(dt))
+			}
+		} else {
+			return Date.parse(newValue, s);
+		}
 	}
 }
 
@@ -262,4 +275,7 @@ d2js.Collectors.oc = d2js.KNOWN_COLLECTORS['oc'] = function(element, newValue){
 }
 
 
+d2js.Collectors.json = function(element, v){
+	return v.length ? JSON.parse(v, parseDate) : null;
+}
 

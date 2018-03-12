@@ -410,64 +410,6 @@ ALTER SEQUENCE login_log_id_seq OWNED BY login_log.id;
 
 
 --
--- Name: member_message; Type: TABLE; Schema: uac; Owner: uac
---
-
-CREATE TABLE member_message (
-    id integer NOT NULL,
-    title character varying(140),
-    content text,
-    type character(1),
-    readd timestamp without time zone,
-    receiver integer,
-    sender integer,
-    action character varying(200),
-    CONSTRAINT ckc_type_member_m CHECK (((type IS NULL) OR (type = ANY (ARRAY['O'::bpchar, 'N'::bpchar]))))
-);
-
-
-ALTER TABLE member_message OWNER TO uac;
-
---
--- Name: TABLE member_message; Type: COMMENT; Schema: uac; Owner: uac
---
-
-COMMENT ON TABLE member_message IS '消息类型为 O 的为一次性消息，此种消息在阅后即删除。';
-
-
---
--- Name: COLUMN member_message.action; Type: COMMENT; Schema: uac; Owner: uac
---
-
-COMMENT ON COLUMN member_message.action IS '通常为一个 uri，指示该消息打开哪个界面，如
-
-article/<id>  打开文章
-article/<id>/comment/<id>  打开文章并定位到评论
-';
-
-
---
--- Name: member_message_id_seq; Type: SEQUENCE; Schema: uac; Owner: uac
---
-
-CREATE SEQUENCE member_message_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE member_message_id_seq OWNER TO uac;
-
---
--- Name: member_message_id_seq; Type: SEQUENCE OWNED BY; Schema: uac; Owner: uac
---
-
-ALTER SEQUENCE member_message_id_seq OWNED BY member_message.id;
-
-
---
 -- Name: node_id_seq; Type: SEQUENCE; Schema: uac; Owner: uac
 --
 
@@ -1016,13 +958,6 @@ ALTER TABLE ONLY login_log ALTER COLUMN id SET DEFAULT nextval('login_log_id_seq
 
 
 --
--- Name: member_message id; Type: DEFAULT; Schema: uac; Owner: uac
---
-
-ALTER TABLE ONLY member_message ALTER COLUMN id SET DEFAULT nextval('member_message_id_seq'::regclass);
-
-
---
 -- Name: person id; Type: DEFAULT; Schema: uac; Owner: uac
 --
 
@@ -1203,24 +1138,6 @@ COPY login_log (id, person, login_d, action, description, address, session_id, r
 --
 
 SELECT pg_catalog.setval('login_log_id_seq', 3935, true);
-
-
---
--- Data for Name: member_message; Type: TABLE DATA; Schema: uac; Owner: uac
---
-
-COPY member_message (id, title, content, type, readd, receiver, sender, action) FROM stdin;
-2	2	3	O	2016-09-22 12:58:52	1	1	1
-3	sadsa	fdsdgh	O	2016-09-22 15:44:52.709	1	1	1
-1	2	3	O	2016-09-12 00:00:00	3	1	1
-\.
-
-
---
--- Name: member_message_id_seq; Type: SEQUENCE SET; Schema: uac; Owner: uac
---
-
-SELECT pg_catalog.setval('member_message_id_seq', 2, true);
 
 
 --
@@ -1613,14 +1530,6 @@ ALTER TABLE ONLY login_log
 
 
 --
--- Name: member_message pk_member_message; Type: CONSTRAINT; Schema: uac; Owner: uac
---
-
-ALTER TABLE ONLY member_message
-    ADD CONSTRAINT pk_member_message PRIMARY KEY (id);
-
-
---
 -- Name: operation_log pk_operation_log; Type: CONSTRAINT; Schema: uac; Owner: uac
 --
 
@@ -1755,14 +1664,6 @@ ALTER TABLE ONLY employee
 
 ALTER TABLE ONLY login_log
     ADD CONSTRAINT fk_login_log_person_person_id FOREIGN KEY (person) REFERENCES person(id) ON UPDATE RESTRICT ON DELETE CASCADE;
-
-
---
--- Name: member_message fk_mmbr_mssg_sndr_emply_id; Type: FK CONSTRAINT; Schema: uac; Owner: uac
---
-
-ALTER TABLE ONLY member_message
-    ADD CONSTRAINT fk_mmbr_mssg_sndr_emply_id FOREIGN KEY (sender) REFERENCES employee(id) ON UPDATE RESTRICT ON DELETE CASCADE;
 
 
 --

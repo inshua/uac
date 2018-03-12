@@ -67,6 +67,7 @@ function processRequest(d2js, method, params, request, response, session, out, t
 	clone.out = out;
 	clone.session = session;
 	clone.taskDocker = taskDocker;
+	params = (clone.json || JSON).parse(params)	
 	var r = clone[method].call(clone, params);
 	
 	if(!out.isDirty()){
@@ -76,4 +77,18 @@ function processRequest(d2js, method, params, request, response, session, out, t
 			out.print(JSON.stringify(r));
 		}
 	}	
+}
+
+
+function withApplicationLock(lockname, fun, scope){
+	var lock = application[lockname]
+	if(lock == null){
+		Java.synchronized(function(){
+			if(lock = application[lockname]) return;
+			lock = application[lockname] = new java.lang.Object();
+		}, application)();
+	}
+	return Java.synchronized(function(){
+		return fun.call(scope)
+	}, lock)();
 }

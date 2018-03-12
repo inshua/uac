@@ -33,7 +33,7 @@ body {
     padding-right: 0;
 }
 .navbar-inner a {
-    color: white !important;
+/*     color: white !important; */
 }
 
 #navbar-inner-ul > li.dropdown.open > ul > li > a{

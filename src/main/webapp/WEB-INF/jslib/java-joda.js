@@ -12,21 +12,24 @@ var ZonedDateTime = Java.type('java.time.ZonedDateTime'),
 
 
 (function(){
-	var reg = /^(\d{4})-(\d{2})-(\d{2})(T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)(Z|((\+|\-)\d\d:\d\d(\[\w+\/\w+\])?))?)?$/;
-	var prevParseDate = parseDate;
-	parseDate = function(key, value){
+	__ORIGIN_D2JS_JSON__ = JSON; 
+	
+	var reg = /^(\d{4})-(\d{2})-(\d{2})(T(\d{2}):(\d{2})(:(\d{2}(?:\.\d*)?))?(Z|((\+|\-)\d\d:\d\d(\[\w+\/\w+\])?))?)?$/;
+	function parseZdt(key, value){
 		if(typeof value === 'string' && reg.test(value)){
-			return ZonedDateTime.parse(value);
+			try{
+				return ZonedDateTime.parse(value);
+			} catch(e){
+				// 有时遇到一些像这样的格式 "2017-10-25T18:22:17.038" ZonedDateTime.parse 无法解析，先转 JsDate 再转 ZonedDateTime
+		        var a = parseDate.reg.exec(value);
+		        if (a) {
+		            var d = new Date(Date.UTC(+a[1], +a[2] - 1, +a[3], +a[5] || 0, a[6] || 0, +a[7] || 0));
+		            return d.toZonedDateTime();
+		        }
+			}
 		}
 		return value;
 	}
-})();
-
-
-(function(){
-	var reg = /^(\d{4})-(\d{2})-(\d{2})(T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)(Z|((\+|\-)\d\d:\d\d(\[\w+\/\w+\])?))?)?$/;
-	
-	var oldStringify = JSON.stringify;
 	
 	function zonedDatetimeReplacer(key, value){
 		if(value != null && ZonedDateTime.class.isInstance(value)){
@@ -36,29 +39,48 @@ var ZonedDateTime = Java.type('java.time.ZonedDateTime'),
 		}
 	}
 	
-	function wrapReplacer(customReplacer, preserveReplacer){
-		return function(key, value){
-			if(customReplacer instanceof Function){
-				value = customReplacer(key, value);
-				return preserveReplacer(key, value);
-			} else {
-				if(customReplacer.indexOf(key) == -1){
-					return undefined;
-				} else {
-					return preserveReplacer(key, value);
-				}
-			}
-		}
-	}
+	__JODA_JSON__ = JSON = {
+        stringify: function(value, replacer, space){
+        	if(replacer == null){
+    			return __ORIGIN_D2JS_JSON__.stringify.call(this, value, zonedDatetimeReplacer, space);
+    		} else {
+    			return __ORIGIN_D2JS_JSON__.stringify.call(this, value, __ORIGIN_JSON__.wrapReplacer(replacer, zonedDatetimeReplacer), space);
+    		}
+        },
+        parse: function(s){
+        	return __ORIGIN_JSON__.parse(s, parseZdt)
+        },
+        tryStringify: function(obj){
+    		try{
+    			return this.stringify(obj)
+    		} catch(e){
+    			return obj == null ? 'null' : obj.toString()
+    		}
+        }
+    };
 	
-	JSON.stringify = function(value, replacer, space){
-		if(replacer == null){
-			return oldStringify.call(this, value, zonedDatetimeReplacer, space);
-		} else {
-			return oldStringify.call(this, value, wrapReplacer(replacer, zonedDatetimeReplacer), space);
-		}
-	}
 })();
+
+/**
+ * 使用何种类型的 JSON 工具
+ * @param [jsonType='joda'] {string} 'd2js' or 'joda', default is joda
+ * usage:
+ ```js
+    d2js.initD2js = function(){
+   		this.useJSON('d2js')
+   	}
+```
+ */
+D2JS.prototype.useJSON = function(jsonType){
+	switch(jsonType){
+	case 'd2js':
+		this.executor = this.executor.copy(d2js.json = __D2JS_JSON__) // 替换 __JODA_JSON__
+		break;
+	case 'joda':
+		this.executor = this.executor.copy(d2js.json = __JODA_JSON__) 
+		break;
+	}
+}
 
 /**
  * 将 js Date 类型转为 java.time.Instant
@@ -74,11 +96,13 @@ Date.prototype.toInstant = function(){
  * ```js
  * 	new Date().toZonedDateTime('Europe/Berlin')
  * ```
- * @param zoneId {java.time.ZoneId|string} 时区
+ * @param [zoneId=] {java.time.ZoneId|string} 时区
  * @returns {java.time.ZonedDateTime} 
  */
 Date.prototype.toZonedDateTime = function(zoneId){
-	if(ZoneId.class.isInstance(zoneId)){
+	if(zoneId == null){
+		zoneId = ZoneId.of("Z")
+	} else if(ZoneId.class.isInstance(zoneId)){
 		//
 	} else {
 		zoneId = ZoneId.of(zoneId);
@@ -149,7 +173,7 @@ D2JS.DataTable.prototype.mergeTimeZone = function(timestampZoneMap){
  * @param zoneFld {string} 时区字段
  */
 T.splitTimeZone =  function(zoneFld){
-     return {name : 'splitTimeZone', check : function(v, fld, rcd){
+     return {name : 'splitTimeZone', mutable:true, check : function(v, fld, rcd){
 			if(v != null){
 				if(ZonedDateTime.class.isInstance(v)){
 					rcd[zoneFld] = v.zone.toString();
@@ -161,3 +185,10 @@ T.splitTimeZone =  function(zoneFld){
 	}
 }
 
+T.zdtToDate = {name: 'ZonedDateTimeToDate', mutable : true, 
+               check: function(v, fld, rcd, d2js, owner, attr){
+		       		if(v != null && ZonedDateTime.class.isInstance(v)){
+		       			owner[attr] = Date.fromZonedDateTime(v).toJSON()
+		       		}
+               }
+}

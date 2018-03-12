@@ -172,19 +172,20 @@ d2js.createAllowFunctionMask = function(functions, subs){
 
 d2js.loadFunctions = function(role){
 	if(this.executor.isOracle()){
-		var sql =
-			"with rf as\n" +
-			" (select * from uac.sys_role_function where sys_role = ?),\n" + 
-			"fun as\n" + 
-			" (select id, name, parent_id, menu_index, state, developer, code, uri, icon_url, \n" + 
-			"         open_mode\n" + 
-			"    from uac.sys_function f\n" +
-			"   where id in (select sys_function from rf)\n" +
-			"  connect by parent_id = prior id\n" + 		
-			"         and state IN ('N', 'H')\n" + 
-			"   start with id = 0\n" + 
-			"   order siblings by menu_index)\n" + 
-			"select fun.*, rf.dispatch_mode from fun, rf where rf.sys_function = fun.id";
+		sql{.
+			with rf as
+			 (select * from uac.sys_role_function where sys_role = ?),
+			fun as
+			 (select id, name, parent_id, menu_index, state, developer, code, uri, icon_url, 
+			         open_mode
+			    from uac.sys_function f
+			   where id in (select sys_function from rf)
+			  connect by parent_id = prior id
+			         and state IN ('N', 'H')
+			   start with id = 0
+			   order siblings by menu_index)
+			select fun.*, rf.dispatch_mode from fun, rf where rf.sys_function = fun.id
+		.}
 	} else if(this.executor.isPostgreSQL()){
 		sql{.
 			WITH rf AS
@@ -211,57 +212,61 @@ d2js.loadFunctions = function(role){
 };
 
 d2js.loadSubFunctions = function(role){
-	var sql =
-		"select sf.id, sf.name, sf.code, sf.menu_index, sf.state, 'O' dispatch_mode\n" +
-		"  from uac.sys_role_function rf, uac.sys_function f, uac.sub_function sf\n" + 
-		" where rf.sys_role = ?\n" + 
-		"   and rf.sys_function = f.id\n" + 
-		"   and f.state IN ('N', 'H')\n" + 
-		"   and sf.state = 'N'\n" + 
-		"   and sf.sys_function = f.id\n" + 
-		"   and not exists (select 1\n" + 
-		"          from sys_role_sub_function ssf\n" + 
-		"         where ssf.sub_function = sf.id\n" + 
-		"           and ssf.sys_role = ?\n" + 
-		"           and ssf.dispatch_mode = 'D')";
+	sql{.
+		select sf.id, sf.name, sf.code, sf.menu_index, sf.state, 'O' dispatch_mode
+		  from uac.sys_role_function rf, uac.sys_function f, uac.sub_function sf
+		 where rf.sys_role = ?
+		   and rf.sys_function = f.id
+		   and f.state IN ('N', 'H')
+		   and sf.state = 'N'
+		   and sf.sys_function = f.id
+		   and not exists (select 1
+		          from sys_role_sub_function ssf
+		         where ssf.sub_function = sf.id
+		           and ssf.sys_role = ?
+		           and ssf.dispatch_mode = 'D')
+	.}
 
 	return this.query(sql, [role, role]).rows;
 };
 
 d2js.loadRootFunctions = function(){
 	if(this.executor.isOracle()){
-		var sql = 
-			"select id, name, parent_id, menu_index, state, developer, code, uri, icon_url, \n" +
-			"       open_mode, 'T' dispatch_mode \n" + 
-			"  from uac.sys_function f\n" + 
-			"connect by parent_id = prior id\n" + 
-			"       and state IN ('N', 'H')\n" + 
-			" start with id = 0\n" + 
-			" order siblings by menu_index";
+		sql{.
+			select id, name, parent_id, menu_index, state, developer, code, uri, icon_url, 
+			       open_mode, 'T' dispatch_mode 
+			  from uac.sys_function f
+			connect by parent_id = prior id
+			       and state IN ('N', 'H')
+			 start with id = 0
+			 order siblings by menu_index
+		.}
 	} else if(this.executor.isPostgreSQL()){
-		var sql = 
-			"WITH RECURSIVE t AS\n" +
-			" (SELECT *, ARRAY [ menu_index ] menu_path\n" + 
-			"    FROM uac.sys_function\n" + 
-			"   WHERE id = 0\n" + 
-			"  UNION\n" + 
-			"  SELECT d.*, menu_path || d.menu_index\n" + 
-			"    FROM uac.sys_function d, t\n" + 
-			"   WHERE d.parent_id = t.id\n" + 
-			"     AND d.state IN ('N', 'H'))\n" + 
-			"SELECT id, NAME, parent_id, menu_index, state, developer, code, uri, icon_url, \n" + 
-			"       open_mode, 'T' dispatch_mode\n" + 
-			"  FROM t\n" + 
-			" ORDER BY menu_path";
+		sql{.
+			WITH RECURSIVE t AS
+			 (SELECT *, ARRAY [ menu_index ] menu_path
+			    FROM uac.sys_function
+			   WHERE id = 0
+			  UNION
+			  SELECT d.*, menu_path || d.menu_index
+			    FROM uac.sys_function d, t
+			   WHERE d.parent_id = t.id
+			     AND d.state IN ('N', 'H'))
+			SELECT id, NAME, parent_id, menu_index, state, developer, code, uri, icon_url, 
+			       open_mode, 'T' dispatch_mode
+			  FROM t
+			 ORDER BY menu_path
+		.}
 	}
 	return this.query(sql, []).rows;
 };
 
 d2js.loadRootSubFunctions = function(){
-	var sql = 
-		"select id, name, menu_index, state, code, dependence, \n" +
-		"       'T' dispatch_mode \n" + 
-		"  from uac.sub_function f where state IN ('N', 'H')"; 
+	sql{.
+		select id, name, menu_index, state, code, dependence, 
+		       'T' dispatch_mode 
+		  from uac.sub_function f where state IN ('N', 'H')
+	.}
 	return this.query(sql, []).rows;
 };
 
@@ -301,8 +306,17 @@ d2js.findEmployeeByPerson = function(personId){
 
 
 d2js.findRoles = function(eId){
-	var sql = "select ss.id station_id, ss.name station_name,node.name node_name,node.id node_id, sr.name role_name,sr.* from uac.sys_station ss,uac.employee_station es,uac.person p,uac.employee e, uac.sys_station_role_dispatch ssrd,uac.sys_role sr,uac.node " 
-	+"where p.id = e.person and e.id = es.employee and ss.id = es.station and ss.id = ssrd.sys_station and sr.id = ssrd.sys_role and ssrd.bind_node = node.id and e.id = ?"
+	sql{.
+		SELECT ss.ID station_id,	ss.NAME station_name,	node.NAME node_name,	node.ID node_id,
+			sr.NAME role_name,	sr.* 
+		FROM
+			uac.sys_station ss,	uac.employee_station es,	uac.person P,
+			uac.employee e,	uac.sys_station_role_dispatch ssrd,	uac.sys_role sr,
+			uac.node 
+		WHERE	P.ID = e.person AND e.ID = es.employee AND ss.ID = es.station 
+			AND ss.ID = ssrd.sys_station AND sr.ID = ssrd.sys_role AND ssrd.bind_node = node.ID 
+			AND e.ID = ?
+	.}
 	
 	return this.query(sql,[eId]).rows;
 	

@@ -131,7 +131,48 @@
             </a>
             <!-- END LOGO -->
             <div class="sidebar-toggler hidden-phone" style="display:inline-block; width: 25px;height: 25px;margin-left:8px;margin-top:10px;"></div>
-       
+       		
+       		<!-- Account Area and Settings -->
+       		<div class="navbar-header pull-right">
+                    <div class="navbar-account" style="height:50px">
+                        <ul class="account-area">
+                            <li style="display: block">
+                                <a class="login-area dropdown-toggle" data-toggle="dropdown" aria-expanded="true">
+                                    <div class="avatar" title="View your public profile" style="display:inline-block;">
+                                        <img src="../jslib/beyond/img/avatars/adam-jansen.jpg">
+                                    </div>
+                                    <section style="display:inline-block;">
+                                        <h2 style="font-size: inherit;"><span class="profile"><span>root</span></span></h2>
+                                    </section>
+                                </a>
+                                <!--Login Area Dropdown-->
+                                <ul class="pull-right dropdown-menu dropdown-arrow dropdown-login-area">
+                                    [% if(session.stationChooses){ %]
+								     	[% session.stationChooses.forEach(function(choose,idx){ %]
+									      	[% if(idx == session.currRoleIdx){ %]
+									        	<li class="disabled"><a href="#">[%= choose.roles[0].node_name %]&nbsp;&nbsp;
+									        	[%= choose.roles.map(function(a){return a.station_name}).join() %]&nbsp;&nbsp;
+									        	[%= choose.roles.map(function(a){return a.name}).join() %]</a></li>
+									        [%} else { %]
+									        	<li><a href="../login.d2js?_m=shiftRole&chooseIdx=[%= idx %]">
+									        	[%= choose.roles[0].node_name %]&nbsp;&nbsp;
+									        	[%= choose.roles.map(function(a){return a.station_name}).join() %]&nbsp;&nbsp;
+									        	[%= choose.roles.map(function(a){return a.name}).join() %]</a></li>
+									        [%} %]
+								      	[% });%]
+							      		<li class="divider"></li>
+							      	[% } %]							        
+							        <li><a href="../login.d2js?_m=logout"><i class="icon-signout"></i>退出</a></li>
+                                </ul>
+                                <!--/Login Area Dropdown-->
+                            </li>
+                            <!-- /Account Area -->
+                            
+                            
+                        </ul>
+                        
+                    </div>
+                </div>
         </div>
 	</div>
 	<div class="page-sidebar nav-collapse"> 

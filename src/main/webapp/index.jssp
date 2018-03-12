@@ -1,5 +1,3 @@
-[% include('login.d2js'); %]
-
 [% // logger.info('request._m: '+request._m);
  	//取得客户端的cookie;
 	var UUIDCookies = request.getCookies();

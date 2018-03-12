@@ -182,10 +182,21 @@ Molecule.registerPrototype = async function(el, baseUrl) {
             script = el.parentNode.querySelector("script[molecule-for='" + fullname + "']");
         }
         if (script) {
-            var fun = new Function(script.innerHTML);
-            el.moleculeConstructor = fun;
-            fun.extends = script.getAttribute('extends') || script.hasAttribute('extends');
-            script.remove();
+        	try{
+	            var fun = new Function(script.innerHTML);
+	            el.moleculeConstructor = fun;
+	            fun.extends = script.getAttribute('extends') || script.hasAttribute('extends');
+	            script.remove();
+        	} catch(e){
+        		// https://stackoverflow.com/questions/18624395/find-where-a-syntax-error-occurs-when-new-function-fails
+        	    (function addCode(js) {
+        	        var e = document.createElement('script');
+        	        e.type = 'text/javascript';
+        	        e.src = 'data:text/javascript;charset=utf-8,' + escape(js);
+        	        document.body.appendChild(e);
+        	        console.warn("Inserted Script for ", js);
+        	      })(script.innerHTML.replace(/;/g,";\n"));
+        	}
         }
         var scripts = Array.prototype.slice.call(el.querySelectorAll('script'));
         scripts = scripts.concat( 
@@ -246,6 +257,9 @@ Molecule.registerPrototype = async function(el, baseUrl) {
     			await Molecule.loadHtml(src);
     			next(resolve, reject);
     		} else {
+    			if(script.baseURI == 'about:blank'){	//safari
+    				script.src = absolute(baseUrl, script.src)
+    			}
 				script.onload = function(){
 					if(Molecule.debug) console.log(this.src + ' loaded')
 					next(resolve, reject);
@@ -257,6 +271,7 @@ Molecule.registerPrototype = async function(el, baseUrl) {
     
     function absolute(base, relative) {
     	if(relative.charAt(0) == '/') return relative;
+    	if(/^http[s]?:\/\//.test(relative)) return relative;
     	
         var stack = base.split("/"),
             parts = relative.split("/");
@@ -578,44 +593,14 @@ Molecule.scanMolecules = function(starter, manual) {
 }
 
 Molecule.of = function(ele) {
+	if(ele == null) return;
     if(ele.jquery) ele = ele[0];
-    if(ele == null) return;
     var r = ele.moleculeInstance;
     if(r == null && ele.hasAttribute('molecule')) {
         Molecule.scanMolecules(ele);
         return ele.moleculeInstance;
     }
     return r;
-}
-
-while(Array.prototype.defCss == null){		// i dont known why plug this
-											// function always faild, so...
-	/**
-	 * 使用 js 定义 css [{$ : 'p', color : 'red', 'font-size' : 'large'}, {$ : 'h1',
-	 * color : 'blue'}];
-	 */
-	Array.prototype.defCss = function(container){
-		container = container || document.head;
-		var styleElement = document.createElement("style");
-        styleElement.type = "text/css";
-        container.appendChild(styleElement);
-        
-        var styleSheet = styleElement.sheet;
-		for(var i=0; i<this.length; i++){
-			var rule = this[i];
-			var selector = rule.$;
-			var rules = '';
-			for(var attr in rule){ if(rule.hasOwnProperty(attr) && attr != '$'){
-				rules += attr.replace(/_/g, '-') + ':' + rule[attr] + ';';
-			}}
-			if (styleSheet.insertRule)
-	            styleSheet.insertRule(selector + ' {' + rules + '}', styleSheet.cssRules.length);
-	        else if (styleSheet.addRule)
-	            styleSheet.addRule(selector, rules);
-	        			
-		}
-        return styleElement;
-	}
 }
 
 jQuery.holdReady(true);

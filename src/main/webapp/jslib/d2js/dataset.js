@@ -323,35 +323,39 @@ function parseDate(key, value) {
 parseDate.reg = /^(\d{4})-(\d{2})-(\d{2})(T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)(Z|((\+|\-)\d\d:\d\d))?)?$/;
 
 if(typeof JSJoda != 'undefined'){
-	parseDate = function(key, value) {
-	    if (typeof value === 'string') {
-	    	if(parseDate.reg.test(value)){
-	    		return JSJoda.ZonedDateTime.parse(value);
-	    	}
-	    }
-	    return value;
+	(function(){
+		prevParseDate = parseDate
+		var reg = /^(\d{4})-(\d{2})-(\d{2})(T(\d{2}):(\d{2})(:(\d{2}(?:\.\d*)?))?(Z|((\+|\-)\d\d:\d\d(\[\w+\/\w+\])?))?)?$/
+		parseDate = function(key, value) {
+		    if (typeof value === 'string') {
+		    	if(reg.test(value)){
+		    		return JSJoda.ZonedDateTime.parse(value);
+		    	} else if(prevParseDate.reg.test(value)){
+		    		return JSJoda.ZonedDateTime.from(JSJoda.nativeJs(prevParseDate(key, value))).toString()
+		    	}
+		    }
+		    return value;
+		}
+	})()
+	
+	/**
+	 * https://stackoverflow.com/questions/31096130/how-to-json-stringify-a-javascript-date-and-preserve-timezone
+	 */
+	Date.prototype.toJSON = function () {
+	  var timezoneOffsetInHours = -(this.getTimezoneOffset() / 60); //UTC minus local time
+	  var sign = timezoneOffsetInHours >= 0 ? '+' : '-';
+	  var leadingZero = (timezoneOffsetInHours < 10) ? '0' : '';
+	
+	  //It's a bit unfortunate that we need to construct a new Date instance 
+	  //(we don't want _this_ Date instance to be modified)
+	  var correctedDate = new Date(this.getFullYear(), this.getMonth(), 
+	      this.getDate(), this.getHours(), this.getMinutes(), this.getSeconds(), 
+	      this.getMilliseconds());
+	  correctedDate.setHours(this.getHours() + timezoneOffsetInHours);
+	  var iso = correctedDate.toISOString().replace('Z', '');
+	
+	  return iso + sign + leadingZero + Math.abs(timezoneOffsetInHours).toString() + ':00';
 	}
-	parseDate.reg = /^(\d{4})-(\d{2})-(\d{2})(T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)(Z|((\+|\-)\d\d:\d\d(\[\w+\/\w+\])?))?)?$/;
-
-}
-
-/**
- * https://stackoverflow.com/questions/31096130/how-to-json-stringify-a-javascript-date-and-preserve-timezone
- */
-Date.prototype.toJSON = function () {
-  var timezoneOffsetInHours = -(this.getTimezoneOffset() / 60); //UTC minus local time
-  var sign = timezoneOffsetInHours >= 0 ? '+' : '-';
-  var leadingZero = (timezoneOffsetInHours < 10) ? '0' : '';
-
-  //It's a bit unfortunate that we need to construct a new Date instance 
-  //(we don't want _this_ Date instance to be modified)
-  var correctedDate = new Date(this.getFullYear(), this.getMonth(), 
-      this.getDate(), this.getHours(), this.getMinutes(), this.getSeconds(), 
-      this.getMilliseconds());
-  correctedDate.setHours(this.getHours() + timezoneOffsetInHours);
-  var iso = correctedDate.toISOString().replace('Z', '');
-
-  return iso + sign + leadingZero + Math.abs(timezoneOffsetInHours).toString() + ':00';
 }
 
 /**
@@ -990,6 +994,7 @@ if(Array.prototype.indexBy == null){
 	 * 这里值部分为对象引用。
 	 */
 	Array.prototype.indexBy = function(key){
+		if(key == null) return
 		var result = {};
 		for(var i=0; i<this.length; i++){
 			var el = this[i];
