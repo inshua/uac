@@ -1,43 +1,40 @@
-imports('jssp-lib/checknum.js');
-imports("jssp-lib/cryptutil.js");
-imports("jssp-lib/cookie.js");
-imports("config/website.js");
+imports('jssp-lib/crypto-js/core.js')
+imports('jssp-lib/crypto-js/enc-base64.js')
+imports('jssp-lib/crypto-js/sha1.js')
 
-d2js.testPwdByUsername = function(params){
-	var username= this.session.user.username;
-	logger.info("username:" + username);
-	var getpwdSql='select password from person where upper(username) = :name or upper(wechat)= :name or upper(tel) = :name or upper(email) = :name';
-	rows = this.query(getpwdSql, {name : username.toUpperCase()}).rows;
-	if (rows.length) {
-		var r = rows[0];
-		var pwd=r.password;
-		pwd=CryptUtil.hexToByteArray(r.password);
-		var enPwd =JSON.stringify(CryptUtil.mysqlEncrypt(pwd,this.session.random));
-		var rcvPwd = JSON.stringify(CryptUtil.intArrayToByteArray(JSON.parse(params.oldpass)));
-		if(enPwd != rcvPwd){
-			throw new Error('用户名或密码不正确');
-		}else{
-//			this.out.print("{success:true}");
-		}
-	} else {
-		throw new Error('用户名或密码不正确');
-	}
-};
-
-d2js.validatePassword = function(pwdSha1, pwdInput){
-	logger.info('recv pwd ' + pwdInput);
-	var pwd= CryptUtil.hexToByteArray(pwdSha1);
-	var enPwd =CryptUtil.mysqlEncrypt(pwd, this.session.random);
-	var recvPwd = CryptUtil.hexToByteArray(pwdInput);
-	return enPwd.join() == recvPwd.join();
-}
-	
-d2js.random = function(){
+d2js.exports.scramble = 
+d2js.scramble = function(){
 	var random = java.util.UUID.randomUUID().toString();
-	random=random.replace(/-/g,'').substr(0,20);
-	this.session.random=random;
+	random=random.replace(/-/g,'').substr(0,8);
+	this.session.random = random;
 	return random;
 }
+
+function xor(wordArray1, wordArray2){
+	var arr=[];
+	for(var i=0;i<wordArray1.sigBytes / 4; i++){
+		var r = wordArray1.words[i] ^ wordArray2.words[i];
+		arr.push(r);
+	}
+	return CryptoJS.lib.WordArray.create(arr);
+}
+
+// change password
+// update nup.sys_user set password = encode(digest(digest('123456', 'sha1'), 'sha1'), 'base64')
+
+
+d2js.validatePassword = function(serverPassword, token){
+	logger.info('recv token ' + token);
+	serverPassword = CryptoJS.enc.Base64.parse(serverPassword);
+	token = CryptoJS.enc.Hex.parse(token);
+	var scramble = CryptoJS.enc.Latin1.parse(this.session.random)
+	var concated = scramble.concat(serverPassword);
+	var prime = xor(token, CryptoJS.SHA1(concated));
+	
+	var code = CryptoJS.SHA1(prime);		// should equals to server password, stage2 hash
+	logger.info('should be ' + code.toString(CryptoJS.enc.Base64))
+	return (code.toString() == serverPassword.toString())
+}	
 
 d2js.userModifyPwd = function(params){
 	var user=this.session.user;
@@ -57,51 +54,31 @@ d2js.exports.login = true;
 d2js.login = function(params, from) {
 	var username = params.u, password = params.p;
 	try {
-		var sql, rows;
-		//利用cookie登录，后面需要解决
-		if (params.UUIDCookie && from=='cookie') {
-			sql = 'select sys_user.*, node.name node_name, node.type node_type from uac.sys_user sys_user, uac.node node where sys_user.node = node.id and autologin_uuid=?';
-			rows = this.query(sql, [params.UUIDCookie]).rows;
-		} else {
-			if(requireValidCode){
-				if (params.validation != null && this.session.validation != null && (params.validation.toUpperCase() == this.session.validation.toUpperCase())) {
-					this.session.validation = null;
-				} else {
-					throw new Error('校验码不正确');
-				}
+			
+		sql{.
+			select * from uac.vw_employee v where upper(v.username) = :name or upper(v.wechat)= :name or upper(v.tel) = :name or upper(v.email) = :name or upper(v.id_card) = :name or upper(v.employee_no) = :name
+		.}
+		
+		var row = this.queryRow(sql, {name : username.toUpperCase()});
+		
+		if(row == null){
+			throw new Error('user not exists or password error');
 		}
-			
-			var getpwdSql= 'select * from uac.vw_employee v where upper(v.username) = :name '
-				+'or upper(v.wechat)= :name or upper(v.tel) = :name or upper(v.email) = :name or upper(v.id_card) = :name or upper(v.employee_no) = :name' ;
-			
-			rows = this.query(getpwdSql, {name : username.toUpperCase()}).rows;
-			
-			if (rows.length) {
-				
-				var r = rows[0];
-				var user = {"id":r.id,"login":{"action":"L"}};
-				this.session.user = user;
-				
-				if(!this.validatePassword(r.password, password)){
-					throw new Error('密码不正确');
-					} else {
-						logger.info('密码正确')
-					}
-				}else{
-					throw new Error('系统没有该用户，请检查！');
-				}
-			
-			sql = 'select * from uac.vw_employee v where upper(v.username) = :name '
-				+'or upper(v.wechat)= :name or upper(v.tel) = :name or upper(v.email) = :name or upper(v.id_card) = :name or upper(v.employee_no) = :name' ;
-			rows = this.query(sql, {name : username.toUpperCase()}).rows;
+		
+		var user = {"id":row.id,"login":{"action":"L"}};
+		this.session.user = user;
+		
+		if(!this.validatePassword(row.password, password)){
+			throw new Error('密码不正确');
 		}
+		
+		sql{.
+			select * from uac.vw_employee v where upper(v.username) = :name or upper(v.wechat)= :name or upper(v.tel) = :name or upper(v.email) = :name or upper(v.id_card) = :name or upper(v.employee_no) = :name
+		.}
+		var rows = this.query(sql, {name : username.toUpperCase()}).rows;
 		
 		if (rows.length) {
 			var r = rows[0];
-			
-//			if(this.existSameSession(r.employee)){
-//				throw new Error('不能重复登录');
-//			}
 			
 			user.login.description = "登录名为"+username+",登录类型为"+this.getLoginType(username,r);
 			user.person = r;

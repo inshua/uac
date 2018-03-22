@@ -22,12 +22,9 @@
     	if(typeof console == 'undefined') console = {log : function(){}};
     </script>
     
-    [% 
-     	var random = java.util.UUID.randomUUID().toString();
-    	random=random.replace(/-/g,'').substr(0,20);
-    	session.random=random;
-    %] 
-    <script src="jslib/sha1.js"></script>
+    <script src="jslib/crypto-js/core.js"></script>
+    <script src="jslib/crypto-js/enc-base64.js"></script>
+    <script src="jslib/crypto-js/sha1.js"></script>
     <script src="jslib/jquery-1.10.2.js"></script>
     <script>
         $(function () {
@@ -40,64 +37,90 @@
         });
     </script>
     <script>
-    var random = [%~ random %];
-    
-    function encrypt(pwd){
-    	var pwd2=CryptoJS.SHA1(pwd);
-    	
-    	
-    	var arrRandom = [];
-    	for(var i=0; i<random.length; i++)
-    		arrRandom.push(random.charCodeAt(i));
-
-    	var arrInt = [];
-    	for(var i=0; i<arrRandom.length;i+=4){
-    		var int = (arrRandom[i] << 24) | 
-						(arrRandom[i+1] << 16) |
-						(arrRandom[i+2] << 8) |
-						arrRandom[i+3];
-    		arrInt.push(int);
-    	}
-    	
-    	var concated = arrInt.concat(CryptoJS.SHA1(pwd2).words);
-
-    	var b = CryptoJS.SHA1({words : concated, sigBytes : 40});
-    	
-    	var arr=[];
-    	for(var i=0;i<5;i++){
-    		var r = pwd2.words[i] ^ b.words[i];
-    		arr.push(r);
-    	}
-    	return CryptoJS.lib.WordArray.create(arr).toString();
-    }
-    
-    function submitForm(input) {
-    	var username= document.getElementById('username').value;
-    	if(username==''){
-    		$('.message').text('提示：用户名不能为空，请检查！').show();
-    		return;
-    	}
-	    var txPassword=document.getElementById("pw").value.toUpperCase();
-	    if(txPassword==''){
-	    	$('.message').text('提示：密码不能为空，请检查！').show();
-	    	return;
-	    }
+    [% 
+		this.mixin('login.d2js');
+	%]
+    var random = [%~ this.scramble() %];
 	    
-	    [%
-	    	if(requireValidCode){
-	    		%]
-	    			var txValidCode = document.getElementById("txValidationCode").value;
-	    			if(txValidCode==''){
-	    				$('.message').text('提示：验证码不能为空，请检查！').show();
-	    				return;
-	    			}
-	    		[%
-	    	}
-	    %]
-	    var encryptPwd=encrypt(txPassword)
-		document.getElementById("txPassword").value =encryptPwd ;
-		$(input).parents('form:first')[0].submit();
-    }
+	//  var random = '1a2b3c4d'
+	//  var pwd = 'P@ssw0rd';
+		// SHA1(scramble + SHA1(stage1_hash)) xor stage1_hash
+	 	// 		concated = scramble + SHA1(stage1_hash)
+	 	// 		sha1(concated) xor stage1_hash
+	 function encrypt(pwd){
+		   	var stage1Hash = CryptoJS.SHA1(pwd);
+		   	var stage2Hash = CryptoJS.SHA1(stage1Hash);
+		   	
+		   	//console.log('stage1Hash', stage1Hash.toString(CryptoJS.enc.Base64));
+			//console.log('stage1Hash', stage1Hash.toString());
+			
+			//console.log('stage2Hash', stage2Hash.toString(CryptoJS.enc.Base64));
+			//console.log('stage2Hash', stage2Hash.toString());
+		   	
+		   	var scramble = CryptoJS.enc.Latin1.parse(random);
+		   	//console.log('scramble', scramble.toString());
+		   			
+		   	var concated = scramble.concat(stage2Hash);
+		   	//console.log('concated', concated.toString());
+			var b = CryptoJS.SHA1(concated);
+			//console.log('sha1 concated', b.toString());
+			var token = xor(stage1Hash, b);
+			//console.log('xor', token.toString());
+		   	//console.log(token.toString(CryptoJS.enc.Base64));
+		   	
+		   	//var back = xor(token, b);	// xor back test
+		   	//console.log('back', back.toString());	
+		   	return token.toString();
+	 }
+	 
+	 function xor(wordArray1, wordArray2){
+			var arr=[];
+		   	for(var i=0;i<wordArray1.sigBytes / 4; i++){
+		   		var r = wordArray1.words[i] ^ wordArray2.words[i];
+		   		arr.push(r);
+		   	}
+		   	return CryptoJS.lib.WordArray.create(arr);
+		}
+	 
+	 /*
+	   SERVER:  recv(reply)
+	         hash_stage1=xor(reply, sha1(public_seed,hash_stage2))
+	         candidate_hash2=sha1(hash_stage1)
+	         check(candidate_hash2==hash_stage2)
+	 */
+	 function reverse(token){
+	  	//stage1 Prime = token xor SHA1(scramble + Server_Password) = Ib0S3Bg/dA7nbye3jrOcitlyp1c=
+		   //token = CryptoJS.enc.Base64.parse('SHkjjUY0dRd2NxhizIPoLsA57JE=')
+		   var serverPassword = CryptoJS.SHA1(CryptoJS.SHA1(pwd));
+		   console.log(serverPassword.toString(CryptoJS.enc.Base64));
+		   
+		   var scramble = CryptoJS.enc.Latin1.parse(random)
+		   var concated = scramble.concat(serverPassword);
+		   var prime = xor(token, CryptoJS.SHA1(concated));
+		   console.log(prime.toString(CryptoJS.enc.Base64));
+		   
+		   var code = CryptoJS.SHA1(prime);		// should equals to server password, stage2 hash
+		   console.log(code.toString(CryptoJS.enc.Base64));
+		   console.assert(code.toString() == serverPassword.toString())
+	 }
+	 
+	 function submitForm(input) {
+		   var $form = $(input).parents('form');
+		   	var username= $form.find('#username').val();
+		   	if(username==''){
+		   		$('.message').text('提示：用户名不能为空，请检查！').show();
+		   		return;
+		   	}
+		    var txPassword= $form.find('#pw').val();
+		    if(txPassword==''){
+		    	$('.message').text('提示：密码不能为空，请检查！').show();
+		    	return;
+		    }
+		    
+		    var encryptPwd = encrypt(txPassword);
+		    $form.find('#txPassword').val(encryptPwd);
+			$form[0].submit();
+	 }
     </script>
 </head>
 <body>
