@@ -1115,21 +1115,6 @@ SELECT pg_catalog.setval('image_seq', 38, true);
 COPY login_log (id, person, login_d, action, description, address, session_id, result, result_desc, login_mode, device_id) FROM stdin;
 3919	0	\N	L	登录名为root,登录类型为用户名登录	localhost	50C408DF0A985A976B41B610C90721A2	S	root登录系统	B	\N
 3920	0	\N	L	登录名为root,登录类型为用户名登录	localhost	8D951C4956F93838DD0B361246C11C4E	S	root登录系统	B	\N
-3921	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
-3922	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
-3923	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
-3924	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
-3925	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
-3926	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
-3927	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
-3928	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
-3929	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
-3930	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
-3931	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
-3932	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
-3933	0	\N	L	登录名为root,登录类型为用户名登录	localhost	B17CCED8064BC8F6A99CD0EC18E52CE8	S	root登录系统	B	\N
-3934	0	\N	L	登录名为root,登录类型为用户名登录	localhost	9D2B91C7056A1CA53A897A17D6F249D1	S	root登录系统	B	\N
-3935	0	\N	L	登录名为root,登录类型为用户名登录	localhost	9D2B91C7056A1CA53A897A17D6F249D1	S	root登录系统	B	\N
 \.
 
 
@@ -1208,12 +1193,7 @@ COPY operation_log (id, person, address, sessionid, start_time, end_time, functi
 --
 
 COPY person (id, name, photo, address, tel, mobile, wechat, username, password, email, nationality, birth, gender, id_card, tag, unionid, brief, weibo, qq, weixin, qq_name, weibo_name, weixin_name, state, create_time) FROM stdin;
-10168	li	\N	aaa	\N	\N	\N	4	c984aed014aec7623a54f0591da07a85fd4b762d	\N	\N	\N	M	\N	{"Manager": "false"}	\N								0	0
-10167	zhang	\N	ddd	\N	\N	\N	3	c984aed014aec7623a54f0591da07a85fd4b762d	\N	\N	\N	M	\N	{"Manager": "false"}	\N								0	0
-10170	dd	\N	dd	\N	\N	\N	22	c984aed014aec7623a54f0591da07a85fd4b762d	\N	\N	\N	M	\N	{"Manager": "false"}	\N								0	0
-0	root	http://121.40.216.238/Service/Attrachment/test.png	\N	\N	15980080080	\N	root	7c4a8d09ca3762af61e59520943dc26494f8941b	\N	\N	\N	M	510108166602021111            	{"intentDepatment": "gaaasdfasd"}	\N								0	0
-10171	John	\N	xxz	\N	\N	\N	332	c984aed014aec7623a54f0591da07a85fd4b762d	\N	\N	2017-09-13	M	\N	{"Manager": "false"}	\N								0	0
-10166	zhang	\N	ddddd	\N	2222	\N	2	c984aed014aec7623a54f0591da07a85fd4b762d	\N	\N	\N	M	\N	\N	\N								0	0
+0	root	http://121.40.216.238/Service/Attrachment/test.png	\N	\N	15980080080	\N	root	a7SDfrdDKRBe5FaN2n3GftLKKtk=	\N	\N	\N	M	510108166602021111            	{"intentDepatment": "gaaasdfasd"}	\N								0	0
 \.
 
 
