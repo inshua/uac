@@ -84,7 +84,7 @@ d2js.findExistPerson = function(params){
 d2js.findRoleByCode = function(node, roleCode){
 	var sql = 
 		"with recursive nd as (\n" +
-		"  select * from node where id = :node \n" + 
+		"  select * from uac.node where id = :node \n" + 
 		"  union\n" + 
 		"  select node.* from uac.node, nd where node.id = nd.parent_id\n" + 
 		"),\n" + 
@@ -182,7 +182,7 @@ d2js.fetch=function(params){
 		select em.id id,em.employee_no, em.state,em.nodes,em.sys_stations,
 			pe.id person_id,pe.password,pe.name,pe.address,pe.tel,pe.mobile,
 			pe.wechat,pe.username,pe.email,pe.birth,pe.gender,pe.id_card, 
-			array_to_string(array(select name from node where id = any(em.nodes)), ',') node_names
+			array_to_string(array(select name from uac.node where id = any(em.nodes)), ',') node_names
 		from employee em, person pe where pe.id = em.person
 		and exists (select * from nd where id = any(em.nodes))
 	

@@ -3,7 +3,7 @@ function defineNodeSql(executor){
 		/**
 		 * <pre>
 		 * 增加节点范围查询的 SQL。
-		 * 生成一个 WITH node AS (select ... from node ... connect by .. )，
+		 * 生成一个 WITH node AS (select ... from uac.node ... connect by .. )，
 		 * 在后面的 SQL 中可以使用 nd。用法如：
 		 * <pre class="code">
 		 * 		sql = nodeSql(params, ['COMPANY']) + sql;

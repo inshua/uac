@@ -19,7 +19,7 @@ d2js.findAncientTypesAnd = findAncientTypesAnd;
 
 d2js.exports.listNodeTypes = 
 d2js.listNodeTypes = function(){
-	return this.query('select t.child_type as name from (select distinct child_type from node_allowed_children_type order by child_type) t');
+	return this.query('select t.child_type as name from (select distinct child_type from uac.node_allowed_children_type order by child_type) t');
 }
 
 d2js.validate = function(rcd, action){

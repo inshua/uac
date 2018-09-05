@@ -78,7 +78,7 @@ V.uniqueCompanyInNode = function(table, tableField, primaryDesc, ignoreCase){
 			if(v == null || v === '') return;
 			
 			sql{.
-				select * from node where parent_id = :parent_id and name = :name 
+				select * from uac.node where parent_id = :parent_id and name = :name 
 				sql{.?(rcd.id != null)
 						and id <> :id
 				.}
